@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 #
 import logging
+
 from pprint import pformat
+
 from couchdb.server.exceptions import Error
 
 log = logging.getLogger(__name__)
 
 __all__ = ['best_match', 'MimeProvider', 'DEFAULT_TYPES']
+
 
 def parse_mimetype(mimetype):
     parts = mimetype.split(';')
@@ -26,12 +29,14 @@ def parse_mimetype(mimetype):
         typeparts = fulltype, None
     return typeparts[0], typeparts[1], params
 
+
 def parse_media_range(range):
     parsed_type = parse_mimetype(range)
     q = float(parsed_type[2].get('q', '1'))
     if q < 0 or q >= 1:
         parsed_type[2]['q'] = '1'
     return parsed_type
+
 
 def fitness_and_quality(mimetype, ranges):
     parsed_ranges = [parse_media_range(item) for item in ranges.split(',')]
@@ -54,8 +59,10 @@ def fitness_and_quality(mimetype, ranges):
                 best_fit_q = params.get('q', 0)
     return best_fitness, float(best_fit_q)
 
+
 def quality(mimetype, ranges):
     return fitness_and_quality(mimetype, ranges)
+
 
 def best_match(supported, header):
     weighted = []
@@ -172,10 +179,11 @@ class MimeProvider(object):
             if bestkey in self.mimes_by_key:
                 self._resp_content_type = self.mimes_by_key[bestkey][0]
         elif accept:
-            supported_mimes = (mime
-               for key in self.funcs_by_key
-               for mime in self.mimes_by_key[key]
-               if key in self.mimes_by_key)
+            supported_mimes = (
+                mime
+                for key in self.funcs_by_key
+                for mime in self.mimes_by_key[key]
+                if key in self.mimes_by_key)
             self._resp_content_type = best_match(supported_mimes, accept)
             bestkey = self.keys_by_mime.get(self._resp_content_type)
         else:

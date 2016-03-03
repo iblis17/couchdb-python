@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 #
 import logging
+
 from types import FunctionType
+
 from couchdb.server.exceptions import FatalError, Error
 
 __all__ = ['DDoc']
 
 log = logging.getLogger(__name__)
+
 
 class DDoc(object):
     """Design document operation class.
@@ -36,7 +39,6 @@ class DDoc(object):
             return self.add_ddoc(server, *args)
         else:
             return self.run_ddoc_func(server, cmd, *args)
-
 
     def add_ddoc(self, server, ddoc_id, ddoc):
         """

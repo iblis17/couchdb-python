@@ -2,12 +2,14 @@
 #
 import logging
 import sys
+
 from couchdb import json
-from couchdb.server import compiler, ddoc, exceptions, filters, render, \
-                           state, stream, validate, views
+from couchdb.server import (compiler, ddoc, exceptions, filters, render,
+                            state, stream, validate, views)
 from couchdb.server.helpers import partial, maybe_extract_source
 
 __all__ = ['BaseQueryServer', 'SimpleQueryServer']
+
 
 class NullHandler(logging.Handler):
     def emit(self, *args, **kwargs):
@@ -31,11 +33,11 @@ class BaseQueryServer(object):
     def __init__(self, version=None, **options):
         """Initialize query server instance."""
 
-        input = options.pop('input', sys.stdin)
+        input_ = options.pop('input', sys.stdin)
         output = options.pop('output', sys.stdout)
-        self._receive = partial(stream.receive, input=input)
+        self._receive = partial(stream.receive, input=input_)
         self._respond = partial(stream.respond, output=output)
-        
+
         self._version = version or (999, 999, 999)
 
         self._commands = {}
@@ -250,7 +252,7 @@ class BaseQueryServer(object):
 
         :param funsrc: Function source code.
         :type funsrc: str
-        
+
         :param ddoc: Design document object.
         :type ddoc: dict
 
@@ -274,7 +276,7 @@ class BaseQueryServer(object):
         :type message: list
 
         :returns: Command handler result.
-        
+
         :raises:
             - :exc:`~couchdb.server.exceptions.FatalError` if no handlers was
               registered for processed command.
@@ -283,7 +285,7 @@ class BaseQueryServer(object):
             return self._process_request(message)
         except Exception:
             self.handle_exception(*sys.exc_info())
-    
+
     def _process_request(self, message):
         cmd, args = message.pop(0), message
         log.debug('Process command `%s`', cmd)
@@ -658,7 +660,7 @@ class SimpleQueryServer(BaseQueryServer):
 
         .. versionadded:: 0.11.0
         """
-        args =  [doc or {}, req or {}]
+        args = [doc or {}, req or {}]
         return self.ddoc_cmd(ddoc_id, 'shows', func_path, args)
 
     def ddoc_list(self, ddoc_id, func_path, rows, head=None, req=None):

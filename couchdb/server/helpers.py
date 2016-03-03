@@ -12,10 +12,12 @@ except ImportError:
             newkeywords = keywords.copy()
             newkeywords.update(fkeywords)
             return func(*(args + fargs), **newkeywords)
+
         newfunc.func = func
         newfunc.args = args
         newfunc.keywords = keywords
         return newfunc
+
 
 def maybe_extract_source(fun):
     if isinstance(fun, FunctionType):
@@ -23,6 +25,7 @@ def maybe_extract_source(fun):
     elif isinstance(fun, basestring):
         return fun
     raise TypeError('Function object or source string expected, got %r' % fun)
+
 
 def wrap_func_to_ddoc(id, path, fun):
     _ = ddoc = {'_id': id}

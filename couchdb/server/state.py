@@ -6,6 +6,7 @@ __all__ = ['add_fun', 'add_lib', 'reset']
 
 log = logging.getLogger(__name__)
 
+
 def reset(server, config=None):
     """Resets query server state.
 
@@ -31,6 +32,7 @@ def reset(server, config=None):
         server.state['view_lib'] = ''
     return True
 
+
 def add_fun(server, funsrc):
     """Compiles and adds function to state cache.
 
@@ -53,6 +55,7 @@ def add_fun(server, funsrc):
     server.state['functions'].append(server.compile(funsrc, ddoc))
     server.state['functions_src'].append(funsrc)
     return True
+
 
 def add_lib(server, lib):
     """Add lib to state which could be used within views that allows usage

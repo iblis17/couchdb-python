@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 #
 import logging
+
 from couchdb.server.exceptions import Forbidden, Error, ViewServerException
 
 __all__ = ['validate', 'ddoc_validate']
 
 log = logging.getLogger(__name__)
+
 
 def handle_error(func, err, userctx):
     if isinstance(err, Forbidden):
@@ -27,6 +29,7 @@ def handle_error(func, err, userctx):
         log.exception('Something went wrong in %s', func)
         raise Error(err.__class__.__name__, str(err))
 
+
 def run_validate(func, *args):
     log.debug('Run %s for userctx:\n%s', func, args[2])
     try:
@@ -34,6 +37,7 @@ def run_validate(func, *args):
     except Exception, err:
         handle_error(func, err, args[2])
     return 1
+
 
 def validate(server, funsrc, newdoc, olddoc, userctx):
     """Implementation of `validate` command.
@@ -64,6 +68,7 @@ def validate(server, funsrc, newdoc, olddoc, userctx):
         Use :func:`~couchdb.server.validate.ddoc_validate` instead.
     """
     return run_validate(server.compile(funsrc), newdoc, olddoc, userctx)
+
 
 def ddoc_validate(server, func, newdoc, olddoc, userctx, secobj=None):
     """Implementation of ddoc `validate_doc_update` command.

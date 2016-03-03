@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 import logging
+
 from types import FunctionType
+
 from couchdb.server import mime
 from couchdb.server.exceptions import Error, FatalError, ViewServerException
 from couchdb.server.helpers import partial
@@ -11,6 +13,7 @@ __all__ = ['show', 'list', 'update',
            'ChunkedResponder']
 
 log = logging.getLogger(__name__)
+
 
 class ChunkedResponder(object):
 
@@ -84,10 +87,12 @@ class ChunkedResponder(object):
         self.write([label, self.chunks])
         self.chunks = []
 
+
 def apply_context(func, **context):
     func.func_globals.update(context)
     func = FunctionType(func.func_code, func.func_globals)
     return func
+
 
 def apply_content_type(resp, resp_content_type):
     if not resp.get('headers'):
@@ -96,14 +101,17 @@ def apply_content_type(resp, resp_content_type):
         resp['headers']['Content-Type'] = resp_content_type
     return resp
 
+
 def maybe_wrap_response(resp):
     if isinstance(resp, basestring):
         return {'body': resp}
     else:
         return resp
 
+
 def is_doc_request_path(info):
     return len(info['path']) > 5
+
 
 def run_show(server, func, doc, req):
     log.debug('Run show %s\ndoc: %s\nreq: %s', func, doc, req)
@@ -111,16 +119,16 @@ def run_show(server, func, doc, req):
     responder = ChunkedResponder(server.receive, server.respond, mime_provider)
     func = apply_context(
         func,
-        register_type = mime_provider.register_type,
-        provides = mime_provider.provides,
-        start = responder.start,
-        send = responder.send
+        register_type=mime_provider.register_type,
+        provides=mime_provider.provides,
+        start=responder.start,
+        send=responder.send
     )
     try:
         resp = func(doc, req) or {}
         if responder.chunks:
             resp = maybe_wrap_response(resp)
-            if not 'headers' in resp:
+            if 'headers' not in resp:
                 resp['headers'] = {}
             for key, value in responder.startresp.items():
                 assert isinstance(key, str), 'invalid header key %r' % key
@@ -156,6 +164,7 @@ def run_show(server, func, doc, req):
             raise Error('render_error', msg)
         return ['resp', resp]
 
+
 def run_update(server, func, doc, req):
     log.debug('Run update %s\ndoc: %s\nreq: %s', func, doc, req)
     method = req.get('method', None)
@@ -181,17 +190,18 @@ def run_update(server, func, doc, req):
             log.error(msg)
             raise Error('render_error', msg)
 
+
 def run_list(server, func, head, req):
     log.debug('Run list %s\nhead: %s\nreq: %s', func, head, req)
     mime_provider = mime.MimeProvider()
     responder = ChunkedResponder(server.receive, server.respond, mime_provider)
     func = apply_context(
         func,
-        register_type = mime_provider.register_type,
-        provides = mime_provider.provides,
-        start = responder.start,
-        send = responder.send,
-        get_row = responder.get_row
+        register_type=mime_provider.register_type,
+        provides=mime_provider.provides,
+        start=responder.start,
+        send=responder.send,
+        get_row=responder.get_row
     )
     try:
         tail = func(head, req)
@@ -209,6 +219,7 @@ def run_list(server, func, head, req):
         log.exception('List %s raised an error:\n'
                       'head: %s\nreq: %s\n', func, head, req)
         raise Error('render_error', str(err))
+
 
 def list(server, head, req):
     """Implementation of `list` command. Should be prequested by ``add_fun``
@@ -233,6 +244,7 @@ def list(server, head, req):
     func = server.state['functions'][0]
     return run_list(server, func, head, req)
 
+
 def ddoc_list(server, func, head, req):
     """Implementation of ddoc `lists` command.
 
@@ -253,6 +265,7 @@ def ddoc_list(server, func, head, req):
     .. versionadded:: 0.11.0
     """
     return run_list(server, func, head, req)
+
 
 def show(server, func, doc, req):
     """Implementation of `show` command.
@@ -278,6 +291,7 @@ def show(server, func, doc, req):
     """
     return run_show(server, server.compile(func), doc, req)
 
+
 def ddoc_show(server, func, doc, req):
     """Implementation of ddoc `shows` command.
 
@@ -298,6 +312,7 @@ def ddoc_show(server, func, doc, req):
     .. versionadded:: 0.11.0
     """
     return run_show(server, func, doc, req)
+
 
 def update(server, funsrc, doc, req):
     """Implementation of `update` command.
@@ -330,6 +345,7 @@ def update(server, funsrc, doc, req):
         Use :func:`~couchdb.server.render.ddoc_update` instead.
     """
     return run_update(server, server.compile(funsrc), doc, req)
+
 
 def ddoc_update(server, func, doc, req):
     """Implementation of ddoc `updates` commands.
@@ -380,6 +396,7 @@ def render_function(func, args):
         log.exception('Unexpected exception occurred in %s', func)
         raise Error('render_error', str(err))
 
+
 def response_with(req, responders, mime_provider):
     """Context dispatcher method.
 
@@ -410,10 +427,11 @@ def response_with(req, responders, mime_provider):
         log.warn('Not acceptable content-type: %s', mimetype)
         return {'code': 406, 'body': 'Not acceptable: %s' % mimetype}
     else:
-        if not 'headers' in resp:
+        if 'headers' not in resp:
             resp['headers'] = {}
         resp['headers']['Content-Type'] = mime_provider.resp_content_type
         return resp
+
 
 def show_doc(server, funsrc, doc, req):
     """Implementation of `show_doc` command.
@@ -445,6 +463,7 @@ def show_doc(server, funsrc, doc, req):
               func, doc, req, funsrc)
     return render_function(func, [doc, req])
 
+
 def list_begin(server, head, req):
     """Initiates list rows generation.
 
@@ -474,6 +493,7 @@ def list_begin(server, head, req):
     log.debug('Run list begin %s\nhead: %s\nreq: %s', func, head, req)
     func = apply_context(func, response_with=response_with)
     return render_function(func, [head, None, req, None])
+
 
 def list_row(server, row, req):
     """Generates single list row.
@@ -507,6 +527,7 @@ def list_row(server, row, req):
     row_info['row_number'] += 1
     server.state['row_line'][func] = row_info
     return resp
+
 
 def list_tail(server, req):
     """Finishes list result output.

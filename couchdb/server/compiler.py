@@ -5,11 +5,13 @@ import base64
 import os
 import logging
 import tempfile
+
 from codecs import BOM_UTF8
 from types import CodeType, FunctionType
 from types import ModuleType
-from couchdb.server.exceptions import Error, FatalError, Forbidden
+
 from couchdb import json
+from couchdb.server.exceptions import Error, FatalError, Forbidden
 
 try:
     from pkgutil import iter_modules
@@ -17,6 +19,7 @@ except ImportError:
     try:
         # Python 2.4
         from pkg_resources import get_importer, zipimport
+
         def iter_modules(paths):
             for path in paths:
                 loader = get_importer(path)
@@ -59,11 +62,13 @@ def compile_to_bytecode(funsrc):
     # compile + exec > exec
     return compile(funsrc.replace('\r\n', '\n'), '<string>', 'exec')
 
+
 def maybe_b64egg(b64str):
     """Checks if passed string is base64 encoded egg file"""
     # Quick and dirty check for base64 encoded zipfile.
     # Saves time and IO operations in most cases.
     return isinstance(b64str, basestring) and b64str.startswith('UEsDBBQAAAAIA')
+
 
 def maybe_export_egg(source, allow_eggs=False, egg_cache=None):
     """Tries to extract export statements from encoded egg"""
@@ -71,11 +76,13 @@ def maybe_export_egg(source, allow_eggs=False, egg_cache=None):
         return import_b64egg(source, egg_cache)
     return None
 
+
 def maybe_compile_function(source):
     """Tries to compile Python source code to bytecode"""
     if isinstance(source, basestring):
         return compile_to_bytecode(source)
     return None
+
 
 def maybe_export_bytecode(source, context):
     """Tries to extract export statements from executed bytecode source"""
@@ -84,11 +91,13 @@ def maybe_export_bytecode(source, context):
         return context.get('exports', {})
     return None
 
+
 def maybe_export_cached_egg(source):
     """Tries to extract export statements from cached egg namespace"""
     if isinstance(source, EggExports):
         return source
     return None
+
 
 def cache_to_ddoc(ddoc, path, obj):
     """Cache object to ddoc by specified path"""
@@ -97,6 +106,7 @@ def cache_to_ddoc(ddoc, path, obj):
     for item in path:
         prev, point = point, point.get(item)
     prev[item] = obj
+
 
 def resolve_module(names, mod, root=None):
     def helper():
@@ -151,7 +161,7 @@ def resolve_module(names, mod, root=None):
     if current is None:
         raise Error('invalid_require_path',
                     'Required module missing.' + helper())
-    if not name in current:
+    if name not in current:
         raise Error('invalid_require_path',
                     'Object %r has no property %r' % (idx, name) + helper())
     return resolve_module(names, {
@@ -159,6 +169,7 @@ def resolve_module(names, mod, root=None):
         'parent': mod,
         'id': (idx is not None) and (idx + '/' + name) or name
     })
+
 
 def import_b64egg(b64str, egg_cache=None):
     """Imports top level namespace from base64 encoded egg file.
@@ -203,6 +214,7 @@ def import_b64egg(b64str, egg_cache=None):
     finally:
         if egg_path is not None and os.path.exists(egg_path):
             os.unlink(egg_path)
+
 
 def require(ddoc, context=None, **options):
     """Wraps design ``require`` function with access to design document.
@@ -265,6 +277,7 @@ def require(ddoc, context=None, **options):
     """
     context = context or DEFAULT_CONTEXT.copy()
     _visited_ids = []
+
     def require(path, module=None):
         log.debug('Looking for export objects at %s', path)
         module = module and module.get('parent') or {}
@@ -310,12 +323,13 @@ def require(ddoc, context=None, **options):
                 log.exception('Failed to compile source code:\n%s',
                               new_module['current'])
                 raise Error('compilation_error', str(err))
-            
+
             raise Error('invalid_required_object', repr(new_module['current']))
         finally:
             if _visited_ids:
                 _visited_ids.pop()
     return require
+
 
 def compile_func(funsrc, ddoc=None, context=None, **options):
     """Compile source code and extract function object from it.

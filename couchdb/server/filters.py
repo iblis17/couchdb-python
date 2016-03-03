@@ -6,8 +6,10 @@ __all__ = ['filter', 'ddoc_filter', 'ddoc_views']
 
 log = logging.getLogger(__name__)
 
+
 def run_filter(func, docs, *args):
     return [True, [bool(func(doc, *args)) for doc in docs]]
+
 
 def run_filter_view(func, docs):
     result = []
@@ -18,6 +20,7 @@ def run_filter_view(func, docs):
         else:
             result.append(False)
     return [True, result]
+
 
 def filter(server, docs, req, userctx=None):
     """Implementation of `filter` command. Should be preceded  by ``add_fun``
@@ -48,6 +51,7 @@ def filter(server, docs, req, userctx=None):
         Use :func:`~couchdb.server.filters.ddoc_filter` instead.
     """
     return run_filter(server.state['functions'][0], docs, req, userctx)
+
 
 def ddoc_filter(server, func, docs, req, userctx=None):
     """Implementation of ddoc `filters` command.
@@ -83,6 +87,7 @@ def ddoc_filter(server, func, docs, req, userctx=None):
     else:
         args = req,
     return run_filter(func, docs, *args)
+
 
 def ddoc_views(server, func, docs):
     """Implementation of ddoc `views` command. Filters ``_changes`` feed using

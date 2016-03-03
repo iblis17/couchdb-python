@@ -3,12 +3,14 @@
 """Controls all workflow with input/output streams"""
 import logging
 import sys
+
 from couchdb import json
 from couchdb.server.exceptions import FatalError
 
 __all__ = ['receive', 'respond']
 
 log = logging.getLogger(__name__)
+
 
 def receive(input=sys.stdin):
     """Yields json decoded line from input stream.
@@ -28,6 +30,7 @@ def receive(input=sys.stdin):
         except Exception, err:
             log.exception('Unable to decode json data:\n%s', line)
             raise FatalError('json_decode', str(err))
+
 
 def respond(obj, output=sys.stdout):
     """Writes json encoded object to output stream.

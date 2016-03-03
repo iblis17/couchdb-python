@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 #
 from collections import deque
+
 from couchdb import json
 from couchdb.server import SimpleQueryServer
+
 
 class MockStream(deque):
 
@@ -20,6 +22,7 @@ class MockStream(deque):
 
     def flush(self):
         pass
+
 
 class MockQueryServer(SimpleQueryServer):
     """Mock version of Python query server."""

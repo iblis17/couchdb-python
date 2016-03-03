@@ -2,12 +2,14 @@
 #
 import copy
 import logging
+
 from couchdb import json
 from couchdb.server.exceptions import ViewServerException, Error
 
 __all__ = ['map_doc', 'reduce', 'rereduce']
 
 log = logging.getLogger(__name__)
+
 
 def map_doc(server, doc):
     """Applies available map functions to document.
@@ -52,6 +54,7 @@ def map_doc(server, doc):
         raise Error(err.__class__.__name__, str(err))
     else:
         return map_results
+
 
 def reduce(server, reduce_funs, kvs, rereduce=False):
     """Reduces mapping result.
@@ -107,6 +110,7 @@ def reduce(server, reduce_funs, kvs, rereduce=False):
                 log.error(msg)
                 raise Error('reduce_overflow_error', msg)
     return [True, reductions]
+
 
 def rereduce(server, reduce_funs, values):
     """Rereduces mapping result
