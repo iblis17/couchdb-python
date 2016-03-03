@@ -2,6 +2,8 @@
 #
 import types
 import unittest
+
+from couchdb import util
 from couchdb.server import compiler
 from couchdb.server import exceptions
 
@@ -151,7 +153,7 @@ class DDocModulesTestCase(unittest.TestCase):
     def test_invalid_require_path_error_type(self):
         try:
             compiler.resolve_module('/'.split('/'), {}, {})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'invalid_require_path')
 
@@ -247,7 +249,7 @@ class CompilerTestCase(unittest.TestCase):
         )
         try:
             compiler.compile_func(funsrc)
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'compilation_error')
 
@@ -295,14 +297,14 @@ class CompilerTestCase(unittest.TestCase):
         )
         try:
             compiler.compile_func(funsrc)
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'compilation_error')
 
     def test_fail_eval_source_to_function(self):
         try:
             compiler.compile_func('')
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'compilation_error')
 
@@ -313,16 +315,16 @@ class CompilerTestCase(unittest.TestCase):
         )
         try:
             compiler.compile_func(funsrc)
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'compilation_error')
-            self.assertTrue(isinstance(err.args[1], basestring))
+            self.assertTrue(isinstance(err.args[1], util.strbase))
 
     def test_fail_for_runtime_error_on_compilation(self):
         funsrc = '1/0'
         try:
             compiler.compile_func(funsrc)
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'compilation_error')
 

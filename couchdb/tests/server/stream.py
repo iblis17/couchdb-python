@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 #
 import unittest
-from StringIO import StringIO
+
 from couchdb.server import exceptions
 from couchdb.server import stream
+from couchdb.util import StringIO
 
 
 class StreamTestCase(unittest.TestCase):
@@ -12,16 +13,16 @@ class StreamTestCase(unittest.TestCase):
         """should decode json data from input stream"""
         input = StringIO('["foo", "bar"]\n["bar", {"foo": "baz"}]')
         reader = stream.receive(input)
-        self.assertEqual(reader.next(), ['foo', 'bar'])
-        self.assertEqual(reader.next(), ['bar', {'foo': 'baz'}])
-        self.assertRaises(StopIteration, reader.next)
+        self.assertEqual(next(reader), ['foo', 'bar'])
+        self.assertEqual(next(reader), ['bar', {'foo': 'baz'}])
+        self.assertRaises(StopIteration, reader.__next__)
 
     def test_fail_on_receive_invalid_json_data(self):
         """should raise FatalError if json decode fails"""
         input = StringIO('["foo", "bar" "bar", {"foo": "baz"}]')
         try:
-            stream.receive(input).next()
-        except Exception, err:
+            next(stream.receive(input))
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.FatalError))
             self.assertEqual(err.args[0], 'json_decode')
 
@@ -36,7 +37,7 @@ class StreamTestCase(unittest.TestCase):
         output = StringIO()
         try:
             stream.respond(['error', 'foo', IOError('bar')], output)
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.FatalError))
             self.assertEqual(err.args[0], 'json_encode')
 

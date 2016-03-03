@@ -54,7 +54,7 @@ class MapTestCase(unittest.TestCase):
         )
         try:
             views.map_doc(self.server, {'_id': 'foo'})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(err, exceptions.FatalError)
             self.assertEqual(err.args[0], 'test')
             self.assertEqual(err.args[1], 'let it crush!')
@@ -68,7 +68,7 @@ class MapTestCase(unittest.TestCase):
         )
         try:
             views.map_doc(self.server, {'_id': 'foo'})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(err, exceptions.Error)
             self.assertEqual(err.args[0], ZeroDivisionError.__name__)
 
@@ -172,7 +172,7 @@ class ReduceTestCase(unittest.TestCase):
                 ['def reducefun(keys, values): return "-" * 200'],
                 result[0]
             )
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'reduce_overflow_error')
         else:
@@ -197,7 +197,7 @@ class ReduceTestCase(unittest.TestCase):
                 ['def reducefun(keys, values): return foo'],
                 [['foo', 'bar'], ['bar', 'baz']]
             )
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(err, exceptions.Error)
             self.assertEqual(err.args[0], NameError.__name__)
 

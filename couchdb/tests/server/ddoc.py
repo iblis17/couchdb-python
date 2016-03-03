@@ -45,7 +45,7 @@ class DDocTestCase(unittest.TestCase):
         self.ddoc(self.server, 'new', 'foo', {'bar': 'def boo(): return True'})
         try:
             self.ddoc(self.server, 'foo', ['boo', 'bar'], [])
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.FatalError))
             self.assertEqual(err.args[0], 'unknown_command')
 
@@ -62,7 +62,7 @@ class DDocTestCase(unittest.TestCase):
         self.ddoc(self.server, 'new', 'foo', {'bar': {'baz': 'pass'}})
         try:
             self.ddoc(self.server, 'foo', ['bar', 'zap'], [])
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'not_found')
 

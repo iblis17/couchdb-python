@@ -84,7 +84,7 @@ class ValidateTestCase(unittest.TestCase):
         func = compiler.compile_func(funsrc, {})
         try:
             validate.ddoc_validate(self.server, func, {}, {}, {})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.FatalError))
             self.assertEqual(err.args[0], 'validation')
             self.assertEqual(err.args[1], 'failed')
@@ -98,7 +98,7 @@ class ValidateTestCase(unittest.TestCase):
         func = compiler.compile_func(funsrc, {})
         try:
             validate.ddoc_validate(self.server, func, {}, {}, {})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'NameError')
 

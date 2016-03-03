@@ -143,7 +143,7 @@ class ShowTestCase(unittest.TestCase):
         funsrc = dedent(getsource(func))
         try:
             render.show_doc(self.server, funsrc, self.doc, {})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'render_error')
         else:
@@ -155,7 +155,7 @@ class ShowTestCase(unittest.TestCase):
         funsrc = dedent(getsource(func))
         try:
             render.show_doc(self.server, funsrc, self.doc, {})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'render_error')
         else:
@@ -284,7 +284,7 @@ class ShowTestCase(unittest.TestCase):
             send('let it crush!')
         try:
             token, resp = render.run_show(self.server, func, self.doc, {})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'render_error')
         else:
@@ -296,7 +296,7 @@ class ShowTestCase(unittest.TestCase):
             return object()
         try:
             token, resp = render.run_show(self.server, func, self.doc, {})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'render_error')
         else:
@@ -308,7 +308,7 @@ class ShowTestCase(unittest.TestCase):
                 pass
         try:
             token, resp = render.run_show(self.server, func, self.doc, {})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'render_error')
         else:
@@ -431,7 +431,7 @@ class ListTestCase(unittest.TestCase):
         self.server.m_input_write(['reset'])
         try:
             render.run_list(self.server, func, {}, {'q': 'ok'})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.FatalError))
             self.assertEqual(err.args[0], 'list_error')
         else:
@@ -471,7 +471,7 @@ class ListTestCase(unittest.TestCase):
             1/0
         try:
             render.run_list(self.server, func, {}, {'q': 'ok'})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'render_error')
         else:
@@ -514,7 +514,7 @@ class UpdateTestCase(unittest.TestCase):
     def test_method_get_not_allowed(self):
         try:
             render.run_update(self.server, self.func, {}, {'method': 'GET'})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'method_not_allowed')
         else:
@@ -529,7 +529,7 @@ class UpdateTestCase(unittest.TestCase):
             return [None, object()]
         try:
             token, resp = render.run_update(self.server, func, {}, {})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'render_error')
         else:
@@ -541,7 +541,7 @@ class UpdateTestCase(unittest.TestCase):
             1/0
         try:
             render.run_update(self.server, func, {}, {})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'render_error')
         else:

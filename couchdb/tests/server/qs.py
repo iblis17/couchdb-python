@@ -2,11 +2,10 @@
 #
 import unittest
 
-from cStringIO import StringIO
-
 from couchdb.server import BaseQueryServer, SimpleQueryServer
 from couchdb.server import exceptions
 from couchdb.server.helpers import partial, wrap_func_to_ddoc
+from couchdb.util import StringIO
 
 
 class BaseQueryServerTestCase(unittest.TestCase):
@@ -49,7 +48,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server.commands['foo'] = command_foo
         try:
             server.process_request(['foo', 'bar'])
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.FatalError))
 
     def test_response_for_fatal_error_oldstyle(self):
@@ -88,8 +87,9 @@ class BaseQueryServerTestCase(unittest.TestCase):
         def maybe_qs_error(func):
             def wrapper(exc_type, exc_value, exc_traceback):
                 assert exc_type is exceptions.Error
-                func.im_self.mock_last_error = exc_type
+                func.__self__.mock_last_error = exc_type
                 return func(exc_type, exc_value, exc_traceback)
+
             return wrapper
 
         output = StringIO()
@@ -161,7 +161,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server.commands['foo'] = command_foo
         try:
             server.process_request(['foo', 'bar'])
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, ValueError))
 
     def test_response_python_exception_oldstyle(self):
@@ -215,7 +215,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server = BaseQueryServer(output=StringIO())
         try:
             server.process_request(['foo', 'bar'])
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.FatalError))
             self.assertEqual(err.args[0], 'unknown_command')
 
@@ -336,7 +336,7 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         def red_fun(keys, values, rereduce):
             return sum(values)
         server = self.server()
-        reduced = server.rereduce([red_fun], range(10))
+        reduced = server.rereduce([red_fun], list(range(10)))
         self.assertEqual(reduced, [True, [45]])
 
     def test_reduce_no_records(self):

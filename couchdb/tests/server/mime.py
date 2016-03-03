@@ -92,7 +92,7 @@ class ProvidesTestCase(MimeTestCase):
         registered providers"""
         try:
             self.provider.run_provides({})
-        except Exception, err:
+        except Exception as err:
             self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], 'not_acceptable')
 
