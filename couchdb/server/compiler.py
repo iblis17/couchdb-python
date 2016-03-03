@@ -10,7 +10,7 @@ from codecs import BOM_UTF8
 from types import CodeType, FunctionType
 from types import ModuleType
 
-from couchdb import json
+from couchdb import json, util
 from couchdb.server.exceptions import Error, FatalError, Forbidden
 
 try:
@@ -52,9 +52,9 @@ class EggExports(dict):
 def compile_to_bytecode(funsrc):
     """Compiles function source string to bytecode"""
     log.debug('Compile source code to function\n%s', funsrc)
-    assert isinstance(funsrc, basestring), 'Invalid source object %r' % funsrc
+    assert isinstance(funsrc, util.strbase), 'Invalid source object %r' % funsrc
 
-    if isinstance(funsrc, unicode):
+    if isinstance(funsrc, util.utype):
         funsrc = funsrc.encode('utf-8')
     if not funsrc.startswith(BOM_UTF8):
         funsrc = BOM_UTF8 + funsrc
@@ -67,7 +67,7 @@ def maybe_b64egg(b64str):
     """Checks if passed string is base64 encoded egg file"""
     # Quick and dirty check for base64 encoded zipfile.
     # Saves time and IO operations in most cases.
-    return isinstance(b64str, basestring) and b64str.startswith('UEsDBBQAAAAIA')
+    return isinstance(b64str, util.strbase) and b64str.startswith('UEsDBBQAAAAIA')
 
 
 def maybe_export_egg(source, allow_eggs=False, egg_cache=None):
@@ -79,7 +79,7 @@ def maybe_export_egg(source, allow_eggs=False, egg_cache=None):
 
 def maybe_compile_function(source):
     """Tries to compile Python source code to bytecode"""
-    if isinstance(source, basestring):
+    if isinstance(source, util.strbase):
         return compile_to_bytecode(source)
     return None
 
@@ -87,7 +87,7 @@ def maybe_compile_function(source):
 def maybe_export_bytecode(source, context):
     """Tries to extract export statements from executed bytecode source"""
     if isinstance(source, CodeType):
-        exec source in context
+        exec(source, context)
         return context.get('exports', {})
     return None
 
@@ -119,7 +119,7 @@ def resolve_module(names, mod, root=None):
     parent = mod.get('parent')
     current = mod.get('current')
     if not names:
-        if not isinstance(current, (basestring, CodeType, EggExports)):
+        if not isinstance(current, util.strbase + (CodeType, EggExports)):
             raise Error('invalid_require_path',
                         'Must require Python string, code object or egg cache,'
                         ' not %r (at %s)' % (type(current), idx))
@@ -319,7 +319,7 @@ def require(ddoc, context=None, **options):
                 exports = maybe_export_bytecode(source, module_context)
                 if exports is not None:
                     return exports
-            except Exception, err:
+            except Exception as err:
                 log.exception('Failed to compile source code:\n%s',
                               new_module['current'])
                 raise Error('compilation_error', str(err))
@@ -369,8 +369,8 @@ def compile_func(funsrc, ddoc=None, context=None, **options):
     globals_ = {}
     try:
         bytecode = compile_to_bytecode(funsrc)
-        exec bytecode in context, globals_
-    except Exception, err:
+        exec(bytecode, context, globals_)
+    except Exception as err:
         log.exception('Failed to compile source code:\n%s', funsrc)
         raise Error('compilation_error', str(err))
 

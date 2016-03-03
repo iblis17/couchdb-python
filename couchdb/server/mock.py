@@ -2,7 +2,7 @@
 #
 from collections import deque
 
-from couchdb import json
+from couchdb import json, util
 from couchdb.server import SimpleQueryServer
 
 
@@ -15,7 +15,7 @@ class MockStream(deque):
             return ''
 
     def write(self, data):
-        if isinstance(data, basestring):
+        if isinstance(data, util.strbase):
             self.append(json.decode(data))
         else:
             self.append(data)

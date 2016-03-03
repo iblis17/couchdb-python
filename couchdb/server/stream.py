@@ -4,7 +4,7 @@
 import logging
 import sys
 
-from couchdb import json
+from couchdb import json, util
 from couchdb.server.exceptions import FatalError
 
 __all__ = ['receive', 'respond']
@@ -27,7 +27,7 @@ def receive(input=sys.stdin):
         log.debug('Input:\n%r', line)
         try:
             yield json.decode(line)
-        except Exception, err:
+        except Exception as err:
             log.exception('Unable to decode json data:\n%s', line)
             raise FatalError('json_decode', str(err))
 
@@ -45,11 +45,11 @@ def respond(obj, output=sys.stdout):
         return
     try:
         obj = json.encode(obj) + '\n'
-    except Exception, err:
+    except Exception as err:
         log.exception('Unable to encode object to json:\n%r', obj)
         raise FatalError('json_encode', str(err))
     else:
-        if isinstance(obj, unicode):
+        if isinstance(obj, util.utype):
             obj = obj.encode('utf-8')
         log.debug('Output:\n%r', obj)
         output.write(obj)

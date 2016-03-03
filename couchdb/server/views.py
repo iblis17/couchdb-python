@@ -43,7 +43,7 @@ def map_doc(server, doc):
                             ' `%s`, but was restored to original state',
                             docid, func.__name__)
                 doc = copy.deepcopy(orig_doc)
-    except Exception, err:
+    except Exception as err:
         msg = 'Exception raised for document `%s`:\n%s\n\n%s\n\n'
         funsrc = server.state['functions_src'][idx]
         log.exception(msg, docid, doc, funsrc)
@@ -83,14 +83,14 @@ def reduce(server, reduce_funs, kvs, rereduce=False):
     """
     reductions = []
     _append = reductions.append
-    keys, values = rereduce and (None, kvs) or zip(*kvs) or ([], [])
+    keys, values = rereduce and (None, kvs) or tuple(zip(*kvs)) or ([], [])
     log.debug('Reducing\nkeys: %s\nvalues: %s', keys, values)
     args = (keys, values, rereduce)
     try:
         for funsrc in reduce_funs:
             function = server.compile(funsrc)
-            _append(function(*args[:function.func_code.co_argcount]))
-    except Exception, err:
+            _append(function(*args[:function.__code__.co_argcount]))
+    except Exception as err:
         msg = 'Exception raised on reduction:\nkeys: %s\nvalues: %s\n\n%s\n\n'
         log.exception(msg, keys, values, funsrc)
         if isinstance(err, ViewServerException):

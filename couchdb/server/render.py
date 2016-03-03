@@ -4,6 +4,7 @@ import logging
 
 from types import FunctionType
 
+from couchdb import util
 from couchdb.server import mime
 from couchdb.server.exceptions import Error, FatalError, ViewServerException
 from couchdb.server.helpers import partial
@@ -44,7 +45,7 @@ class ChunkedResponder(object):
             else:
                 self.blow_chunks()
             try:
-                data = reader.next()
+                data = next(reader)
             except StopIteration:
                 break
             if data[0] == 'list_end':
@@ -78,8 +79,8 @@ class ChunkedResponder(object):
                       Would be converted to unicode string.
         :type chunk: unicode or utf-8 encoded string preferred.
         """
-        if not isinstance(chunk, unicode):
-            chunk = unicode(chunk, 'utf-8')
+        if not isinstance(chunk, util.utype):
+            chunk = util.utype(chunk, 'utf-8')
         self.chunks.append(chunk)
 
     def blow_chunks(self, label='chunks'):
@@ -89,8 +90,8 @@ class ChunkedResponder(object):
 
 
 def apply_context(func, **context):
-    func.func_globals.update(context)
-    func = FunctionType(func.func_code, func.func_globals)
+    func.__globals__.update(context)
+    func = FunctionType(func.__code__, func.__globals__)
     return func
 
 
@@ -103,7 +104,7 @@ def apply_content_type(resp, resp_content_type):
 
 
 def maybe_wrap_response(resp):
-    if isinstance(resp, basestring):
+    if isinstance(resp, util.strbase):
         return {'body': resp}
     else:
         return resp
@@ -149,7 +150,7 @@ def run_show(server, func, doc, req):
             resp = apply_content_type(resp, mime_provider.resp_content_type)
     except ViewServerException:
         raise
-    except Exception, err:
+    except Exception as err:
         log.exception('Show %s raised an error:\n'
                       'doc: %s\nreq: %s\n', func, doc, req)
         if doc is None and is_doc_request_path(req):
@@ -158,7 +159,7 @@ def run_show(server, func, doc, req):
     else:
         resp = maybe_wrap_response(resp)
         log.debug('Show %s response\n%s', func, resp)
-        if not isinstance(resp, (dict, basestring)):
+        if not isinstance(resp, (dict,) + util.strbase):
             msg = 'Invalid response object %r ; type: %r' % (resp, type(resp))
             log.error(msg)
             raise Error('render_error', msg)
@@ -176,14 +177,14 @@ def run_update(server, func, doc, req):
         doc, resp = func(doc, req)
     except ViewServerException:
         raise
-    except Exception, err:
+    except Exception as err:
         log.exception('Update %s raised an error:\n'
                       'doc: %s\nreq: %s\n', func, doc, req)
         raise Error('render_error', str(err))
     else:
         resp = maybe_wrap_response(resp)
         log.debug('Update %s response\n%s', func, resp)
-        if isinstance(resp, (dict, basestring)):
+        if isinstance(resp, (dict,) + util.strbase):
             return ['up', doc, resp]
         else:
             msg = 'Invalid response object %r ; type: %r' % (resp, type(resp))
@@ -215,7 +216,7 @@ def run_list(server, func, head, req):
         responder.blow_chunks('end')
     except ViewServerException:
         raise
-    except Exception, err:
+    except Exception as err:
         log.exception('List %s raised an error:\n'
                       'head: %s\nreq: %s\n', func, head, req)
         raise Error('render_error', str(err))
@@ -384,7 +385,7 @@ def ddoc_update(server, func, doc, req):
 def render_function(func, args):
     try:
         resp = maybe_wrap_response(func(*args))
-        if isinstance(resp, (dict, basestring)):
+        if isinstance(resp, (dict,) + util.strbase):
             return resp
         else:
             msg = 'Invalid response object %r ; type: %r' % (resp, type(resp))
@@ -392,7 +393,7 @@ def render_function(func, args):
             raise Error('render_error', msg)
     except ViewServerException:
         raise
-    except Exception, err:
+    except Exception as err:
         log.exception('Unexpected exception occurred in %s', func)
         raise Error('render_error', str(err))
 
@@ -417,7 +418,7 @@ def response_with(req, responders, mime_provider):
         mime_provider.provides(key, func)
     try:
         resp = maybe_wrap_response(mime_provider.run_provides(req, fallback))
-    except Error, err:
+    except Error as err:
         if err.args[0] != 'not_acceptable':
             log.exception('Unexpected error raised:\n'
                           'req: %s\nresponders: %s', req, responders)

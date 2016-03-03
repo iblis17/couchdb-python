@@ -187,7 +187,7 @@ class MimeProvider(object):
             self._resp_content_type = best_match(supported_mimes, accept)
             bestkey = self.keys_by_mime.get(self._resp_content_type)
         else:
-            bestkey = self.funcs_by_key and self.funcs_by_key.keys()[0] or None
+            bestkey = self.funcs_by_key and list(self.funcs_by_key.keys())[0] or None
         log.debug('Provides\nBest key: %s\nBest mime: %s\nRequest: %s',
                   bestkey, self.resp_content_type, req)
         if bestkey is not None:

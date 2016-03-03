@@ -34,7 +34,7 @@ def run_validate(func, *args):
     log.debug('Run %s for userctx:\n%s', func, args[2])
     try:
         func(*args)
-    except Exception, err:
+    except Exception as err:
         handle_error(func, err, args[2])
     return 1
 
@@ -101,7 +101,7 @@ def ddoc_validate(server, func, newdoc, olddoc, userctx, secobj=None):
     """
     args = newdoc, olddoc, userctx, secobj
     if server.version >= (0, 11, 1):
-        if func.func_code.co_argcount == 3:
+        if func.__code__.co_argcount == 3:
             log.warning('Since 0.11.1 CouchDB validate_doc_update functions'
                         ' takes additional 4th argument `secobj`.'
                         ' Please, update your code for %s to remove'

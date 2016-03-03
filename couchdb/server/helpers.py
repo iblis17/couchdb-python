@@ -4,6 +4,8 @@ from inspect import getsource
 from textwrap import dedent
 from types import FunctionType
 
+from couchdb import util
+
 try:
     from functools import partial
 except ImportError:
@@ -22,7 +24,7 @@ except ImportError:
 def maybe_extract_source(fun):
     if isinstance(fun, FunctionType):
         return dedent(getsource(fun))
-    elif isinstance(fun, basestring):
+    elif isinstance(fun, util.strbase):
         return fun
     raise TypeError('Function object or source string expected, got %r' % fun)
 

@@ -3,7 +3,7 @@
 import logging
 import sys
 
-from couchdb import json
+from couchdb import json, util
 from couchdb.server import (compiler, ddoc, exceptions, filters, render,
                             state, stream, validate, views)
 from couchdb.server.helpers import partial, maybe_extract_source
@@ -238,11 +238,11 @@ class BaseQueryServer(object):
         if self.version < (0, 11, 0):
             if message is None:
                 message = 'Error: attempting to log message of None'
-            if not isinstance(message, basestring):
+            if not isinstance(message, util.strbase):
                 message = json.encode(message)
             res = {'log': message}
         else:
-            if not isinstance(message, basestring):
+            if not isinstance(message, util.strbase):
                 message = json.encode(message)
             res = ['log', message]
         self.respond(res)
