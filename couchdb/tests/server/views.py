@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 import unittest
+
 from couchdb.server import exceptions
 from couchdb.server import state
 from couchdb.server import views
 from couchdb.server.mock import MockQueryServer
+
 
 class MapTestCase(unittest.TestCase):
 
@@ -148,7 +150,7 @@ class ReduceTestCase(unittest.TestCase):
             self.server,
             ['def reducefun(keys, values): return sum(values)',
              'def reducefun(keys, values): return max(values)',
-             'def reducefun(keys, values): return min(values)',],
+             'def reducefun(keys, values): return min(values)'],
             result[0]
         )
         self.assertEqual(rresult, [True, [45, 9, 0]])
@@ -183,7 +185,7 @@ class ReduceTestCase(unittest.TestCase):
             views.reduce,
             self.server,
             ['def reducefun(keys, values):\n'
-            '  raise FatalError("let it crush!")'],
+             '  raise FatalError("let it crush!")'],
             [['foo', 'bar'], ['bar', 'baz']]
         )
 

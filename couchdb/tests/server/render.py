@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 import unittest
+
 from inspect import getsource
 from textwrap import dedent
-from couchdb.server import render
+
 from couchdb.server import exceptions
+from couchdb.server import render
 from couchdb.server.mock import MockQueryServer
 
 
@@ -57,10 +59,13 @@ class ShowTestCase(unittest.TestCase):
         def func(doc, req):
             def html():
                 return '<html><body>%s</body></html>' % doc['_id']
+
             def xml():
                 return '<root><doc id="%s" /></root>' % doc['_id']
+
             def foo():
                 return 'foo? bar! bar!'
+
             register_type('foo', 'application/foo', 'application/x-foo')
             return response_with(req, {
                 'html': html,
@@ -68,6 +73,7 @@ class ShowTestCase(unittest.TestCase):
                 'foo': foo,
                 'fallback': 'html'
             })
+
         req = {'headers': {'Accept': 'text/html,application/atom+xml; q=0.9'}}
         funsrc = dedent(getsource(func))
         resp = render.show_doc(self.server, funsrc, self.doc, req)
@@ -159,10 +165,13 @@ class ShowTestCase(unittest.TestCase):
         def func(doc, req):
             def html():
                 return '<html><body>%s</body></html>' % doc['_id']
+
             def xml():
                 return '<root><doc id="%s" /></root>' % doc['_id']
+
             def foo():
                 return 'foo? bar! bar!'
+
             register_type('foo', 'application/foo', 'application/x-foo')
             provides('html', html)
             provides('xml', xml)
@@ -223,7 +232,7 @@ class ShowTestCase(unittest.TestCase):
         self.assertEqual(resp['code'], 302)
 
     def test_show_provides_return_json_or_base64_body(self):
-    # https://issues.apache.org/jira/browse/COUCHDB-1330
+        # https://issues.apache.org/jira/browse/COUCHDB-1330
         def func(doc, req):
             def text():
                 return {
@@ -231,6 +240,7 @@ class ShowTestCase(unittest.TestCase):
                     'json': {'foo': 'bar'}
                 }
             provides('text', text)
+
         token, resp = render.run_show(self.server, func, self.doc, {})
         self.assertEqual(token, 'resp')
         self.assertTrue('code' in resp)
@@ -304,7 +314,7 @@ class ShowTestCase(unittest.TestCase):
         else:
             self.fail('Show function should not has get_row() method in scope.')
 
-                
+
 class ListTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -432,7 +442,7 @@ class ListTestCase(unittest.TestCase):
             def html():
                 for row in get_row():
                     send(row['key'])
-                return  'html resp'
+                return 'html resp'
             send('first chunk')
             send(req['q'])
             provides('html', html)

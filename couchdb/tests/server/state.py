@@ -2,8 +2,10 @@
 #
 import types
 import unittest
+
 from couchdb.server import state
 from couchdb.server.mock import MockQueryServer
+
 
 class StateTestCase(unittest.TestCase):
 

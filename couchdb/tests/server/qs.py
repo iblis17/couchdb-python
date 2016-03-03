@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 #
 import unittest
+
 from cStringIO import StringIO
+
 from couchdb.server import BaseQueryServer, SimpleQueryServer
 from couchdb.server import exceptions
 from couchdb.server.helpers import partial, wrap_func_to_ddoc
+
 
 class BaseQueryServerTestCase(unittest.TestCase):
 
@@ -33,11 +36,13 @@ class BaseQueryServerTestCase(unittest.TestCase):
     def test_handle_fatal_error(self):
         def command_foo(*a, **k):
             raise exceptions.FatalError('foo', 'bar')
+
         def maybe_fatal_error(func):
             def wrapper(exc_type, exc_value, exc_traceback):
                 assert exc_type is exceptions.FatalError
                 return func(exc_type, exc_value, exc_traceback)
             return wrapper
+
         output = StringIO()
         server = BaseQueryServer(output=output)
         server.handle_fatal_error = maybe_fatal_error(server.handle_fatal_error)
@@ -50,6 +55,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
     def test_response_for_fatal_error_oldstyle(self):
         def command_foo(*a, **k):
             raise exceptions.FatalError('foo', 'bar')
+
         output = StringIO()
         server = BaseQueryServer(version=(0, 9, 0), output=output)
         server.commands['foo'] = command_foo
@@ -65,6 +71,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
     def test_response_for_fatal_error_newstyle(self):
         def command_foo(*a, **k):
             raise exceptions.Error('foo', 'bar')
+
         output = StringIO()
         server = BaseQueryServer(version=(0, 11, 0), output=output)
         server.commands['foo'] = command_foo
@@ -77,12 +84,14 @@ class BaseQueryServerTestCase(unittest.TestCase):
     def test_handle_qs_error(self):
         def command_foo(*a, **k):
             raise exceptions.Error('foo', 'bar')
+
         def maybe_qs_error(func):
             def wrapper(exc_type, exc_value, exc_traceback):
                 assert exc_type is exceptions.Error
                 func.im_self.mock_last_error = exc_type
                 return func(exc_type, exc_value, exc_traceback)
             return wrapper
+
         output = StringIO()
         server = BaseQueryServer(output=output)
         server.handle_qs_error = maybe_qs_error(server.handle_qs_error)
@@ -101,6 +110,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
     def test_response_for_qs_error_newstyle(self):
         def command_foo(*a, **k):
             raise exceptions.Error('foo', 'bar')
+
         output = StringIO()
         server = BaseQueryServer(version=(0, 11, 0), output=output)
         server.commands['foo'] = command_foo
@@ -110,11 +120,14 @@ class BaseQueryServerTestCase(unittest.TestCase):
     def test_handle_forbidden_error(self):
         def command_foo(*a, **k):
             raise exceptions.Forbidden('foo')
+
         def maybe_forbidden_error(func):
             def wrapper(exc_type, exc_value, exc_traceback):
                 assert exc_type is exceptions.Forbidden
                 return func(exc_type, exc_value, exc_traceback)
+
             return wrapper
+
         output = StringIO()
         server = BaseQueryServer(output=output)
         server.handle_forbidden_error = maybe_forbidden_error(server.handle_forbidden_error)
@@ -124,6 +137,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
     def test_response_for_forbidden_error(self):
         def command_foo(*a, **k):
             raise exceptions.Forbidden('foo')
+
         output = StringIO()
         server = BaseQueryServer(output=output)
         server.commands['foo'] = command_foo
@@ -133,11 +147,14 @@ class BaseQueryServerTestCase(unittest.TestCase):
     def test_handle_python_exception(self):
         def command_foo(*a, **k):
             raise ValueError('that was a typo')
+
         def maybe_py_error(func):
             def wrapper(exc_type, exc_value, exc_traceback):
                 assert exc_type is ValueError
                 return func(exc_type, exc_value, exc_traceback)
+
             return wrapper
+
         output = StringIO()
         server = BaseQueryServer(output=output)
         server.handle_python_exception = maybe_py_error(server.handle_python_exception)
@@ -150,6 +167,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
     def test_response_python_exception_oldstyle(self):
         def command_foo(*a, **k):
             raise ValueError('that was a typo')
+
         output = StringIO()
         server = BaseQueryServer(version=(0, 9, 0), output=output)
         server.commands['foo'] = command_foo
@@ -165,6 +183,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
     def test_response_python_exception_newstyle(self):
         def command_foo(*a, **k):
             raise ValueError('that was a typo')
+
         output = StringIO()
         server = BaseQueryServer(version=(0, 11, 0), output=output)
         server.commands['foo'] = command_foo
@@ -217,7 +236,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server.log(['foo', {'bar': 'baz'}, 42])
         self.assertEqual(
             output.getvalue(),
-             '{"log": "[\\"foo\\", {\\"bar\\": \\"baz\\"}, 42]"}\n'
+            '{"log": "[\\"foo\\", {\\"bar\\": \\"baz\\"}, 42]"}\n'
         )
 
     def test_log_none_message(self):
@@ -226,7 +245,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server.log(None)
         self.assertEqual(
             output.getvalue(),
-             '{"log": "Error: attempting to log message of None"}\n'
+            '{"log": "Error: attempting to log message of None"}\n'
         )
 
     def test_log_newstyle(self):
@@ -235,8 +254,9 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server.log(['foo', {'bar': 'baz'}, 42])
         self.assertEqual(
             output.getvalue(),
-             '["log", "[\\"foo\\", {\\"bar\\": \\"baz\\"}, 42]"]\n'
+            '["log", "[\\"foo\\", {\\"bar\\": \\"baz\\"}, 42]"]\n'
         )
+
 
 class SimpleQueryServerTestCase(unittest.TestCase):
 
@@ -275,9 +295,11 @@ class SimpleQueryServerTestCase(unittest.TestCase):
     def test_map_doc(self):
         def map_fun_1(doc):
             yield doc['_id'], 1
+
         def map_fun_2(doc):
             yield doc['_id'], 2
             yield doc['_id'], 3
+
         server = self.server()
         self.assertTrue(server.add_fun(map_fun_1))
         self.assertTrue(server.add_fun(map_fun_2))
@@ -290,13 +312,17 @@ class SimpleQueryServerTestCase(unittest.TestCase):
     def test_reduce(self):
         def map_fun_1(doc):
             yield doc['_id'], 1
+
         def map_fun_2(doc):
             yield doc['_id'], 2
             yield doc['_id'], 3
+
         def red_fun_1(keys, values):
             return sum(values)
+
         def red_fun_2(keys, values):
             return min(values)
+
         server = self.server()
         self.assertTrue(server.add_fun(map_fun_1))
         self.assertTrue(server.add_fun(map_fun_2))
@@ -363,10 +389,13 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         def func(doc, req):
             def html():
                 return '<html><body>%s</body></html>' % doc['_id']
+
             def xml():
                 return '<root><doc id="%s" /></root>' % doc['_id']
+
             def foo():
                 return 'foo? bar! bar!'
+
             register_type('foo', 'application/foo', 'application/x-foo')
             return response_with(req, {
                 'html': html,
@@ -374,6 +403,7 @@ class SimpleQueryServerTestCase(unittest.TestCase):
                 'foo': foo,
                 'fallback': 'html'
             })
+
         server = self.server((0, 9, 0))
         doc = {'_id': 'couch'}
         req = {'headers': {'Accept': 'text/html,application/atom+xml; q=0.9'}}
@@ -385,19 +415,23 @@ class SimpleQueryServerTestCase(unittest.TestCase):
                 'body': '<html><body>couch</body></html>'
             }
         )
-        
+
     def test_show(self):
         def func(doc, req):
             def html():
                 return '<html><body>%s</body></html>' % doc['_id']
+
             def xml():
                 return '<root><doc id="%s" /></root>' % doc['_id']
+
             def foo():
                 return 'foo? bar! bar!'
+
             register_type('foo', 'application/foo', 'application/x-foo')
             provides('html', html)
             provides('xml', xml)
             provides('foo', foo)
+
         server = self.server((0, 10, 0))
         doc = {'_id': 'couch'}
         req = {'headers': {'Accept': 'text/html,application/atom+xml; q=0.9'}}
@@ -415,14 +449,18 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         def func(doc, req):
             def html():
                 return '<html><body>%s</body></html>' % doc['_id']
+
             def xml():
                 return '<root><doc id="%s" /></root>' % doc['_id']
+
             def foo():
                 return 'foo? bar! bar!'
+
             register_type('foo', 'application/foo', 'application/x-foo')
             provides('html', html)
             provides('xml', xml)
             provides('foo', foo)
+
         server = self.server((0, 11, 0))
         doc = {'_id': 'couch'}
         req = {'headers': {'Accept': 'text/html,application/atom+xml; q=0.9'}}
@@ -531,6 +569,7 @@ class SimpleQueryServerTestCase(unittest.TestCase):
             result,
             ['up', {'_id': 'foo', 'world': 'hello'}, {'body': 'hello, doc'}]
         )
+
 
 def suite():
     suite = unittest.TestSuite()

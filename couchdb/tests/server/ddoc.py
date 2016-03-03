@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 #
 import unittest
+
 from types import FunctionType
+
 from couchdb.server import ddoc
 from couchdb.server import exceptions
 from couchdb.server.mock import MockQueryServer
+
 
 class DDocTestCase(unittest.TestCase):
 

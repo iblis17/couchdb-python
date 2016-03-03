@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 import unittest
+
 from couchdb.server import exceptions
 from couchdb.server import mime
 
@@ -9,6 +10,7 @@ class MimeTestCase(unittest.TestCase):
 
     def setUp(self):
         self.provider = mime.MimeProvider()
+
 
 class MimeToolsTestCase(MimeTestCase):
 
@@ -77,8 +79,10 @@ class ProvidesTestCase(MimeTestCase):
         """should run first provider if multiple specified"""
         def foo():
             return 'foo'
+
         def bar():
             return 'bar'
+
         self.provider.provides('foo', foo)
         self.provider.provides('bar', bar)
         self.assertEqual(self.provider.run_provides({}), 'foo')
@@ -149,9 +153,10 @@ class ProvidesTestCase(MimeTestCase):
         """should have default registered mimes"""
         self.assertEqual(
             sorted(self.provider.mimes_by_key.keys()),
-            sorted(['all', 'atom', 'css', 'csv', 'html', 'ics', 'js', 'json',
-             'multipart_form', 'rss', 'text', 'url_encoded_form', 'xhtml',
-             'xml', 'yaml'])
+            sorted([
+                'all', 'atom', 'css', 'csv', 'html', 'ics', 'js', 'json',
+                'multipart_form', 'rss', 'text', 'url_encoded_form', 'xhtml',
+                'xml', 'yaml'])
         )
 
     def test_provides(self):

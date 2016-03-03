@@ -38,6 +38,7 @@ DUMMY_EGG = (''
 'ZS9fX2luaXRfXy5weVBLAQIUABQAAAAIAKx1qD5VSgk2gQAAALgAAAAVAAAAAAAAAAAAAAC2gX8D'
 'AAB1bml2ZXJzZS9fX2luaXRfXy5weWNQSwUGAAAAAAkACQBZAgAAMwQAAAAA')
 
+
 class DDocModulesTestCase(unittest.TestCase):
 
     def test_resolve_module(self):
@@ -53,7 +54,7 @@ class DDocModulesTestCase(unittest.TestCase):
                     'parent': {
                         'id': 'foo',
                         'current': module['foo'],
-                        'parent': { 'current': module}
+                        'parent': {'current': module}
                     },
                 },
                 'id': 'foo/bar/baz',

@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 #
 import unittest
+
 from textwrap import dedent
 from inspect import getsource
+
 from couchdb.server import compiler
 from couchdb.server import exceptions
 from couchdb.server import validate
 from couchdb.server.mock import MockQueryServer
+
 
 class ValidateTestCase(unittest.TestCase):
 
