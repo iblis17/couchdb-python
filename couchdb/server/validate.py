@@ -12,13 +12,13 @@ log = logging.getLogger(__name__)
 def handle_error(func, err, userctx):
     if isinstance(err, Forbidden):
         reason = err.args[0]
-        log.warn('Access deny: %s\nuserctx: %s\nfunc: %s',
+        log.warning('Access deny: %s\nuserctx: %s\nfunc: %s',
                  reason, userctx, func)
         raise
     elif isinstance(err, AssertionError):
         # This is custom behavior that allows to use assert statement
         # for field validation. It's just quite handy.
-        log.warn('Access deny: %s\nuserctx: %s\nfunc: %s',
+        log.warning('Access deny: %s\nuserctx: %s\nfunc: %s',
                  err, userctx, func)
         raise Forbidden(str(err))
     elif isinstance(err, ViewServerException):

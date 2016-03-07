@@ -173,7 +173,7 @@ class BaseQueryServer(object):
         :param exc_traceback: Actual exception traceback.
         """
         reason = exc_value.args[0]
-        log.warn('ForbiddenError occurred: %s', reason)
+        log.warning('ForbiddenError occurred: %s', reason)
         self.respond({'forbidden': reason})
 
     def handle_python_exception(self, exc_type, exc_value, exc_traceback):

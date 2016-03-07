@@ -425,7 +425,7 @@ def response_with(req, responders, mime_provider):
             raise
         mimetype = req.get('headers', {}).get('Accept')
         mimetype = req.get('query', {}).get('format', mimetype)
-        log.warn('Not acceptable content-type: %s', mimetype)
+        log.warning('Not acceptable content-type: %s', mimetype)
         return {'code': 406, 'body': 'Not acceptable: %s' % mimetype}
     else:
         if 'headers' not in resp:
