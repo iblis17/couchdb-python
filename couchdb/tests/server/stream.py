@@ -15,7 +15,7 @@ class StreamTestCase(unittest.TestCase):
         reader = stream.receive(input)
         self.assertEqual(next(reader), ['foo', 'bar'])
         self.assertEqual(next(reader), ['bar', {'foo': 'baz'}])
-        self.assertRaises(StopIteration, reader.__next__)
+        self.assertRaises(StopIteration, next, reader)
 
     def test_fail_on_receive_invalid_json_data(self):
         """should raise FatalError if json decode fails"""
