@@ -49,18 +49,26 @@ class EggExports(dict):
     """Sentinel for egg export statements."""
 
 
-def compile_to_bytecode(funsrc):
-    """Compiles function source string to bytecode"""
+def compile_to_bytecode(funsrc, encoding='utf-8'):
+    """Compiles function source string to bytecode
+
+    :param str encoding: if the funsrc is a bytes-like object,
+                         a proper encoding should be provided.
+    """
     log.debug('Compile source code to function\n%s', funsrc)
     assert isinstance(funsrc, util.strbase), 'Invalid source object %r' % funsrc
 
     if isinstance(funsrc, util.utype):
         funsrc = funsrc.encode('utf-8')
+    elif isinstance(funsrc, util.btype):
+        # convert to utf-8 byte string
+        funsrc = funsrc.decode(encoding).encode('utf-8')
+
     if not funsrc.startswith(BOM_UTF8):
         funsrc = BOM_UTF8 + funsrc
 
     # compile + exec > exec
-    return compile(funsrc.replace('\r\n', '\n'), '<string>', 'exec')
+    return compile(funsrc.replace(b'\r\n', b'\n'), '<string>', 'exec')
 
 
 def maybe_b64egg(b64str):
@@ -331,7 +339,7 @@ def require(ddoc, context=None, **options):
     return require
 
 
-def compile_func(funsrc, ddoc=None, context=None, **options):
+def compile_func(funsrc, ddoc=None, context=None, encoding='utf-8', **options):
     """Compile source code and extract function object from it.
 
     :param funsrc: Python source code.
@@ -344,6 +352,9 @@ def compile_func(funsrc, ddoc=None, context=None, **options):
     :type context: dict
 
     :param options: Compiler config options.
+
+    :param encoding: Encoding of source code
+    :type encoding: str
 
     :return: Function object.
 
@@ -368,7 +379,7 @@ def compile_func(funsrc, ddoc=None, context=None, **options):
 
     globals_ = {}
     try:
-        bytecode = compile_to_bytecode(funsrc)
+        bytecode = compile_to_bytecode(funsrc, encoding=encoding)
         exec(bytecode, context, globals_)
     except Exception as err:
         log.exception('Failed to compile source code:\n%s', funsrc)

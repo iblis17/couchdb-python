@@ -288,7 +288,7 @@ class CompilerTestCase(unittest.TestCase):
 
     def test_encoded_function_source_string(self):
         funsrc = u'def test(): return "тест пройден"'.encode('cp1251')
-        compiler.compile_func(funsrc)
+        compiler.compile_func(funsrc, encoding='cp1251')
 
     def test_fail_for_multiple_functions_definition(self):
         funsrc = (
