@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #
+import binascii
 import types
 import unittest
 
@@ -218,7 +219,10 @@ class EggModulesTestCase(unittest.TestCase):
 
     def test_fail_for_invalid_b64egg_string(self):
         egg = 'UEsDBBQAAAAIAKx1qD6TBtcyAwAAAAEAAAAdAAAARUdHLUlORk8vZGVwZW5kZW'
-        self.assertRaises(TypeError, compiler.import_b64egg, egg)
+        # python3 will raise ``binascii.Error``
+        # https://docs.python.org/3/library/base64.html#base64.b64decode
+        self.assertRaises((TypeError, binascii.Error),
+                          compiler.import_b64egg, egg)
 
     def test_fail_for_no_setuptools_or_pkgutils(self):
         egg = 'UEsDBBQAAAAIAKx1qD6TBtcyAwAAAAEAAAAdAAAARUdHLUlORk8vZGVwZW5kZW=='
