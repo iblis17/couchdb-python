@@ -2,6 +2,7 @@
 #
 import logging
 
+from collections import OrderedDict
 from pprint import pformat
 
 from couchdb.server.exceptions import Error
@@ -107,7 +108,7 @@ class MimeProvider(object):
     def __init__(self):
         self.mimes_by_key = {}
         self.keys_by_mime = {}
-        self.funcs_by_key = {}
+        self.funcs_by_key = OrderedDict()
         self._resp_content_type = None
 
         for k, v in DEFAULT_TYPES.items():
