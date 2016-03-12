@@ -2,6 +2,7 @@
 #
 import unittest
 
+from couchdb import json
 from couchdb.server import BaseQueryServer, SimpleQueryServer
 from couchdb.server import exceptions
 from couchdb.server.helpers import partial, wrap_func_to_ddoc
@@ -58,14 +59,12 @@ class BaseQueryServerTestCase(unittest.TestCase):
         output = StringIO()
         server = BaseQueryServer(version=(0, 9, 0), output=output)
         server.commands['foo'] = command_foo
+        expected = {'reason': 'bar', 'error': 'foo'}
         try:
             server.process_request(['foo', 'bar'])
         except Exception:
             pass
-        self.assertEqual(
-            output.getvalue(),
-            '{"reason": "bar", "error": "foo"}\n'
-        )
+        self.assertEqual(json.decode(output.getvalue()), expected)
 
     def test_response_for_fatal_error_newstyle(self):
         def command_foo(*a, **k):
@@ -105,7 +104,8 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server = BaseQueryServer(version=(0, 9, 0), output=output)
         server.commands['foo'] = command_foo
         server.process_request(['foo', 'bar'])
-        self.assertEqual(output.getvalue(), '{"reason": "bar", "error": "foo"}\n')
+        expected = {'reason': 'bar', 'error': 'foo'}
+        self.assertEqual(json.decode(output.getvalue()), expected)
 
     def test_response_for_qs_error_newstyle(self):
         def command_foo(*a, **k):
@@ -171,14 +171,12 @@ class BaseQueryServerTestCase(unittest.TestCase):
         output = StringIO()
         server = BaseQueryServer(version=(0, 9, 0), output=output)
         server.commands['foo'] = command_foo
+        expected = {'reason': 'that was a typo', 'error': 'ValueError'}
         try:
             server.process_request(['foo', 'bar'])
         except Exception:
             pass
-        self.assertEqual(
-            output.getvalue(),
-            '{"reason": "that was a typo", "error": "ValueError"}\n'
-        )
+        self.assertEqual(json.decode(output.getvalue()), expected)
 
     def test_response_python_exception_newstyle(self):
         def command_foo(*a, **k):
