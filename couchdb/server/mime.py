@@ -2,10 +2,10 @@
 #
 import logging
 
-from collections import OrderedDict
 from pprint import pformat
 
 from couchdb.server.exceptions import Error
+from couchdb.util import OrderedDict
 
 log = logging.getLogger(__name__)
 

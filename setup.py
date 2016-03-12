@@ -16,6 +16,11 @@ except ImportError:
     has_setuptools = False
 
 
+requirements = []
+if sys.version_info < (2, 7):
+    requirements += ['ordereddict']
+
+
 # Build setuptools-specific options (if installed).
 if not has_setuptools:
     print("WARNING: setuptools/distribute not available. Console scripts will not be installed.")
@@ -30,7 +35,7 @@ else:
                 'couchdb-replicate = couchdb.tools.replicate:main',
             ],
         },
-        'install_requires': [],
+        'install_requires': requirements,
         'test_suite': 'couchdb.tests.__main__.suite',
         'zip_safe': True,
     }

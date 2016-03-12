@@ -2,6 +2,7 @@
 __all__ = [
     'StringIO', 'urlsplit', 'urlunsplit', 'urlquote', 'urlunquote',
     'urlencode', 'utype', 'btype', 'ltype', 'strbase', 'funcode', 'urlparse',
+    'OrderedDict',
 ]
 
 utype = unicode
@@ -14,6 +15,11 @@ from urlparse import urlparse, urlsplit, urlunsplit
 from urllib import quote as urlquote
 from urllib import unquote as urlunquote
 from urllib import urlencode
+
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 
 
 def funcode(fun):
