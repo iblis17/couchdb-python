@@ -90,8 +90,9 @@ class ChunkedResponder(object):
 
 
 def apply_context(func, **context):
-    func.__globals__.update(context)
-    func = FunctionType(func.__code__, func.__globals__)
+    globals_ = func.__globals__.copy()
+    globals_.update(context)
+    func = FunctionType(func.__code__, globals_)
     return func
 
 

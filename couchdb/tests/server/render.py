@@ -306,6 +306,7 @@ class ShowTestCase(unittest.TestCase):
         def func(doc, req):
             for row in get_row():
                 pass
+
         try:
             token, resp = render.run_show(self.server, func, self.doc, {})
         except Exception as err:
