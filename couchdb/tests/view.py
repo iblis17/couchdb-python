@@ -53,6 +53,17 @@ class ViewServerTestCase(unittest.TestCase):
         view.run(input=input, output=output)
         self.assertEqual(output.getvalue(),
                          b'true\n'
+                         b'["log", "running"]\n'
+                         b'[[[null, {"foo": "bar"}]]]\n')
+
+    def test_map_doc_with_legacy_logging(self):
+        fun = b'def fun(doc): log(\'running\'); yield None, doc'
+        input = StringIO(b'["add_fun", "' + fun + b'"]\n'
+                         b'["map_doc", {"foo": "bar"}]\n')
+        output = StringIO()
+        view.run(input=input, output=output, version=(0, 10, 0))
+        self.assertEqual(output.getvalue(),
+                         b'true\n'
                          b'{"log": "running"}\n'
                          b'[[[null, {"foo": "bar"}]]]\n')
 
@@ -62,6 +73,17 @@ class ViewServerTestCase(unittest.TestCase):
                          b'["map_doc", {"foo": "bar"}]\n')
         output = StringIO()
         view.run(input=input, output=output)
+        self.assertEqual(output.getvalue(),
+                         b'true\n'
+                         b'["log", "[1, 2, 3]"]\n'
+                         b'[[[null, {"foo": "bar"}]]]\n')
+
+    def test_map_doc_with_legacy_logging_json(self):
+        fun = b'def fun(doc): log([1, 2, 3]); yield None, doc'
+        input = StringIO(b'["add_fun", "' + fun + b'"]\n'
+                         b'["map_doc", {"foo": "bar"}]\n')
+        output = StringIO()
+        view.run(input=input, output=output, version=(0, 10, 0))
         self.assertEqual(output.getvalue(),
                          b'true\n'
                          b'{"log": "[1, 2, 3]"}\n'
@@ -81,6 +103,16 @@ class ViewServerTestCase(unittest.TestCase):
                           b'[[null, 1], [null, 2], [null, 3]]]\n')
         output = StringIO()
         view.run(input=input, output=output)
+        self.assertEqual(output.getvalue(),
+                         b'["log", "Summing (1, 2, 3)"]\n'
+                         b'[true, [6]]\n')
+
+    def test_reduce_legacy_with_logging(self):
+        input = StringIO(b'["reduce", '
+                          b'["def fun(keys, values): log(\'Summing %r\' % (values,)); return sum(values)"], '
+                          b'[[null, 1], [null, 2], [null, 3]]]\n')
+        output = StringIO()
+        view.run(input=input, output=output, version=(0, 10, 0))
         self.assertEqual(output.getvalue(),
                          b'{"log": "Summing (1, 2, 3)"}\n'
                          b'[true, [6]]\n')

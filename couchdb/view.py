@@ -8,150 +8,18 @@
 # you should have received as part of this distribution.
 
 """Implementation of a view server for functions written in Python."""
-
-from codecs import BOM_UTF8
+import getopt
 import logging
 import os
 import sys
-import traceback
-from types import FunctionType
 
-from couchdb import json, util
+from couchdb import json
+from couchdb.server import SimpleQueryServer
 
 __all__ = ['main', 'run']
 __docformat__ = 'restructuredtext en'
 
 log = logging.getLogger('couchdb.view')
-
-
-def run(input=sys.stdin, output=sys.stdout):
-    r"""CouchDB view function handler implementation for Python.
-
-    :param input: the readable file-like object to read input from
-    :param output: the writable file-like object to write output to
-    """
-    functions = []
-
-    def _writejson(obj):
-        obj = json.encode(obj)
-        if isinstance(obj, util.utype):
-            obj = obj.encode('utf-8')
-        output.write(obj)
-        output.write(b'\n')
-        output.flush()
-
-    def _log(message):
-        if not isinstance(message, util.strbase):
-            message = json.encode(message)
-        _writejson({'log': message})
-
-    def reset(config=None):
-        del functions[:]
-        return True
-
-    def add_fun(string):
-        string = BOM_UTF8 + string.encode('utf-8')
-        globals_ = {}
-        try:
-            util.pyexec(string, {'log': _log}, globals_)
-        except Exception as e:
-            return {'error': {
-                'id': 'map_compilation_error',
-                'reason': e.args[0]
-            }}
-        err = {'error': {
-            'id': 'map_compilation_error',
-            'reason': 'string must eval to a function '
-                      '(ex: "def(doc): return 1")'
-        }}
-        if len(globals_) != 1:
-            return err
-        function = list(globals_.values())[0]
-        if type(function) is not FunctionType:
-            return err
-        functions.append(function)
-        return True
-
-    def map_doc(doc):
-        results = []
-        for function in functions:
-            try:
-                results.append([[key, value] for key, value in function(doc)])
-            except Exception as e:
-                log.error('runtime error in map function: %s', e,
-                          exc_info=True)
-                results.append([])
-                _log(traceback.format_exc())
-        return results
-
-    def reduce(*cmd, **kwargs):
-        code = BOM_UTF8 + cmd[0][0].encode('utf-8')
-        args = cmd[1]
-        globals_ = {}
-        try:
-            util.pyexec(code, {'log': _log}, globals_)
-        except Exception as e:
-            log.error('runtime error in reduce function: %s', e,
-                      exc_info=True)
-            return {'error': {
-                'id': 'reduce_compilation_error',
-                'reason': e.args[0]
-            }}
-        err = {'error': {
-            'id': 'reduce_compilation_error',
-            'reason': 'string must eval to a function '
-                      '(ex: "def(keys, values): return 1")'
-        }}
-        if len(globals_) != 1:
-            return err
-        function = list(globals_.values())[0]
-        if type(function) is not FunctionType:
-            return err
-
-        rereduce = kwargs.get('rereduce', False)
-        results = []
-        if rereduce:
-            keys = None
-            vals = args
-        else:
-            if args:
-                keys, vals = zip(*args)
-            else:
-                keys, vals = [], []
-        if util.funcode(function).co_argcount == 3:
-            results = function(keys, vals, rereduce)
-        else:
-            results = function(keys, vals)
-        return [True, [results]]
-
-    def rereduce(*cmd):
-        # Note: weird kwargs is for Python 2.5 compat
-        return reduce(*cmd, **{'rereduce': True})
-
-    handlers = {'reset': reset, 'add_fun': add_fun, 'map_doc': map_doc,
-                'reduce': reduce, 'rereduce': rereduce}
-
-    try:
-        while True:
-            line = input.readline()
-            if not line:
-                break
-            try:
-                cmd = json.decode(line)
-                log.debug('Processing %r', cmd)
-            except ValueError as e:
-                log.error('Error: %s', e, exc_info=True)
-                return 1
-            else:
-                retval = handlers[cmd[0]](*cmd[1:])
-                log.debug('Returning  %r', retval)
-                _writejson(retval)
-    except KeyboardInterrupt:
-        return 0
-    except Exception as e:
-        log.error('Error: %s', e, exc_info=True)
-        return 1
-
 
 _VERSION = """%(name)s - CouchDB Python %(version)s
 
@@ -160,73 +28,121 @@ Copyright (C) 2007 Christopher Lenz <cmlenz@gmx.de>.
 
 _HELP = """Usage: %(name)s [OPTION]
 
-The %(name)s command runs the CouchDB Python view server.
+The %(name)s command runs the CouchDB Python query server.
 
 The exit status is 0 for success or 1 for failure.
 
 Options:
 
-  --version             display version information and exit
-  -h, --help            display a short help message and exit
-  --json-module=<name>  set the JSON module to use ('simplejson', 'cjson',
-                        or 'json' are supported)
-  --log-file=<file>     name of the file to write log messages to, or '-' to
-                        enable logging to the standard error stream
-  --debug               enable debug logging; requires --log-file to be
-                        specified
+  --version               display version information and exit
+  -h, --help              display a short help message and exit
+  --json-module=<name>    set the JSON module to use ('simplejson', 'cjson',
+                          or 'json' are supported)
+  --log-file=<file>       name of the file to write log messages to, or '-' to
+                          enable logging to the standard error stream
+  --log-level=<level>     specify logging level (debug, info, warn, error).
+                          Used info level if omitted.
+  --allow-get-update      allows GET requests to call update functions.
+  --enable-eggs           enables support of eggs as modules.
+  --egg-cache=<path>      specifies egg cache dir. If omitted, PYTHON_EGG_CACHE
+                          environment variable value would be used or system
+                          temporary directory if variable not setted.
+  --couchdb-version=<ver> define with which version of couchdb server will work
+                          default: latest implemented.
+                          Supports from 0.9.0 to 1.1.0 and trunk. Technicaly
+                          should work with 0.8.0.
+                          e.g.: --couchdb-version=0.9.0
+  --debug                 enable debug logging; requires --log-file to be
+                          specified
 
-Report bugs via the web at <https://github.com/djc/couchdb-python/issues>.
+Report bugs via the web at <http://code.google.com/p/couchdb-python>.
 """
 
 
+def run(input=sys.stdin, output=sys.stdout, version=None, **config):
+    qs = SimpleQueryServer(version, input=input, output=output, **config)
+    return qs.serve_forever()
+
+
 def main():
-    """Command-line entry point for running the view server."""
-    import getopt
+    """Command-line entry point for running the query server."""
     from couchdb import __version__ as VERSION
+
+    qs_config = {}
 
     try:
         option_list, argument_list = getopt.gnu_getopt(
             sys.argv[1:], 'h',
-            ['version', 'help', 'json-module=', 'debug', 'log-file=']
+            ['version', 'help', 'json-module=', 'log-level=', 'log-file=',
+             'couchdb-version=', 'enable-eggs', 'egg-cache', 'allow-get-update']
         )
 
+        db_version = None
         message = None
+
         for option, value in option_list:
-            if option in ('--version'):
+            if option in ('--version',):
                 message = _VERSION % dict(name=os.path.basename(sys.argv[0]),
                                       version=VERSION)
             elif option in ('-h', '--help'):
                 message = _HELP % dict(name=os.path.basename(sys.argv[0]))
-            elif option in ('--json-module'):
+            elif option in ('--json-module',):
                 json.use(module=value)
-            elif option in ('--debug'):
-                log.setLevel(logging.DEBUG)
-            elif option in ('--log-file'):
-                if value == '-':
-                    handler = logging.StreamHandler(sys.stderr)
-                    handler.setFormatter(logging.Formatter(
-                        ' -> [%(levelname)s] %(message)s'
-                    ))
-                else:
-                    handler = logging.FileHandler(value)
-                    handler.setFormatter(logging.Formatter(
-                        '[%(asctime)s] [%(levelname)s] %(message)s'
-                    ))
-                log.addHandler(handler)
+            elif option in ('--debug',):
+                qs_config['log_level'] = 'DEBUG'
+            elif option in ('--log-level',):
+                qs_config['log_level'] = value.upper()
+            elif option in ('--log-file',):
+                qs_config['log_file'] = value
+            elif option in ('--allow-get-update',):
+                qs_config['allow_get_update'] = True
+            elif option in ('--enable-eggs',):
+                qs_config['enable_eggs'] = True
+            elif option in ('--egg-cache',):
+                qs_config['egg_cache'] = value
+            elif option in ('--couchdb-version',):
+                db_version = _get_db_version(value)
+
         if message:
             sys.stdout.write(message)
             sys.stdout.flush()
             sys.exit(0)
 
     except getopt.GetoptError as error:
-        message = '%s\n\nTry `%s --help` for more information.\n' % (
+        message = '{0}\n\nTry `{1} --help` for more information.\n'.format(
             str(error), os.path.basename(sys.argv[0])
         )
         sys.stderr.write(message)
         sys.stderr.flush()
         sys.exit(1)
 
-    sys.exit(run())
+    sys.exit(run(version=db_version, **qs_config))
+
+
+def _get_db_version(ver_str):
+    """Get version string from command line option
+
+    >>> assert _get_db_version('trunk') is None
+
+    >>> assert _get_db_version('TRUNK') is None
+
+    >>> _get_db_version('1.2.3')
+    (1, 2, 3)
+
+    >>> _get_db_version('1.1')
+    (1, 1, 0)
+
+    >>> _get_db_version('1')
+    (1, 0, 0)
+    """
+    if ver_str.lower() == 'trunk':
+        return
+
+    ver_str = ver_str.split('.')
+    while len(ver_str) < 3:
+        ver_str.append(0)
+
+    return tuple(map(int, ver_str[:3]))
 
 
 if __name__ == '__main__':
