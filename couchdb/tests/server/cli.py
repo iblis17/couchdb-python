@@ -8,9 +8,10 @@
 
 import unittest
 
-from couchdb.util import StringIO
-from couchdb import view
+import couchdb.server.__main__ as cli
+
 from couchdb.tests import testutil
+from couchdb.util import StringIO
 
 
 class ViewServerTestCase(unittest.TestCase):
@@ -18,20 +19,20 @@ class ViewServerTestCase(unittest.TestCase):
     def test_reset(self):
         input = StringIO(b'["reset"]\n')
         output = StringIO()
-        view.run(input=input, output=output)
+        cli.run(input=input, output=output)
         self.assertEqual(output.getvalue(), b'true\n')
 
     def test_add_fun(self):
         input = StringIO(b'["add_fun", "def fun(doc): yield None, doc"]\n')
         output = StringIO()
-        view.run(input=input, output=output)
+        cli.run(input=input, output=output)
         self.assertEqual(output.getvalue(), b'true\n')
 
     def test_map_doc(self):
         input = StringIO(b'["add_fun", "def fun(doc): yield None, doc"]\n'
                          b'["map_doc", {"foo": "bar"}]\n')
         output = StringIO()
-        view.run(input=input, output=output)
+        cli.run(input=input, output=output)
         self.assertEqual(output.getvalue(),
                          b'true\n'
                          b'[[[null, {"foo": "bar"}]]]\n')
@@ -40,7 +41,7 @@ class ViewServerTestCase(unittest.TestCase):
         input = StringIO(b'["add_fun", "def fun(doc): yield doc[\\"test\\"], doc"]\n'
                          b'["map_doc", {"test": "b\xc3\xa5r"}]\n')
         output = StringIO()
-        view.run(input=input, output=output)
+        cli.run(input=input, output=output)
         self.assertEqual(output.getvalue(),
                          b'true\n'
                          b'[[["b\xc3\xa5r", {"test": "b\xc3\xa5r"}]]]\n')
@@ -50,7 +51,7 @@ class ViewServerTestCase(unittest.TestCase):
         input = StringIO(b'["add_fun", "' + fun + b'"]\n'
                          b'["map_doc", {"foo": "bar"}]\n')
         output = StringIO()
-        view.run(input=input, output=output)
+        cli.run(input=input, output=output)
         self.assertEqual(output.getvalue(),
                          b'true\n'
                          b'["log", "running"]\n'
@@ -61,7 +62,7 @@ class ViewServerTestCase(unittest.TestCase):
         input = StringIO(b'["add_fun", "' + fun + b'"]\n'
                          b'["map_doc", {"foo": "bar"}]\n')
         output = StringIO()
-        view.run(input=input, output=output, version=(0, 10, 0))
+        cli.run(input=input, output=output, version=(0, 10, 0))
         self.assertEqual(output.getvalue(),
                          b'true\n'
                          b'{"log": "running"}\n'
@@ -72,7 +73,7 @@ class ViewServerTestCase(unittest.TestCase):
         input = StringIO(b'["add_fun", "' + fun + b'"]\n'
                          b'["map_doc", {"foo": "bar"}]\n')
         output = StringIO()
-        view.run(input=input, output=output)
+        cli.run(input=input, output=output)
         self.assertEqual(output.getvalue(),
                          b'true\n'
                          b'["log", "[1, 2, 3]"]\n'
@@ -83,7 +84,7 @@ class ViewServerTestCase(unittest.TestCase):
         input = StringIO(b'["add_fun", "' + fun + b'"]\n'
                          b'["map_doc", {"foo": "bar"}]\n')
         output = StringIO()
-        view.run(input=input, output=output, version=(0, 10, 0))
+        cli.run(input=input, output=output, version=(0, 10, 0))
         self.assertEqual(output.getvalue(),
                          b'true\n'
                          b'{"log": "[1, 2, 3]"}\n'
@@ -94,7 +95,7 @@ class ViewServerTestCase(unittest.TestCase):
                           b'["def fun(keys, values): return sum(values)"], '
                           b'[[null, 1], [null, 2], [null, 3]]]\n')
         output = StringIO()
-        view.run(input=input, output=output)
+        cli.run(input=input, output=output)
         self.assertEqual(output.getvalue(), b'[true, [6]]\n')
 
     def test_reduce_with_logging(self):
@@ -102,7 +103,7 @@ class ViewServerTestCase(unittest.TestCase):
                           b'["def fun(keys, values): log(\'Summing %r\' % (values,)); return sum(values)"], '
                           b'[[null, 1], [null, 2], [null, 3]]]\n')
         output = StringIO()
-        view.run(input=input, output=output)
+        cli.run(input=input, output=output)
         self.assertEqual(output.getvalue(),
                          b'["log", "Summing (1, 2, 3)"]\n'
                          b'[true, [6]]\n')
@@ -112,7 +113,7 @@ class ViewServerTestCase(unittest.TestCase):
                           b'["def fun(keys, values): log(\'Summing %r\' % (values,)); return sum(values)"], '
                           b'[[null, 1], [null, 2], [null, 3]]]\n')
         output = StringIO()
-        view.run(input=input, output=output, version=(0, 10, 0))
+        cli.run(input=input, output=output, version=(0, 10, 0))
         self.assertEqual(output.getvalue(),
                          b'{"log": "Summing (1, 2, 3)"}\n'
                          b'[true, [6]]\n')
@@ -122,7 +123,7 @@ class ViewServerTestCase(unittest.TestCase):
                           b'["def fun(keys, values, rereduce): return sum(values)"], '
                           b'[1, 2, 3]]\n')
         output = StringIO()
-        view.run(input=input, output=output)
+        cli.run(input=input, output=output)
         self.assertEqual(output.getvalue(), b'[true, [6]]\n')
 
     def test_reduce_empty(self):
@@ -130,14 +131,14 @@ class ViewServerTestCase(unittest.TestCase):
                           b'["def fun(keys, values): return sum(values)"], '
                           b'[]]\n')
         output = StringIO()
-        view.run(input=input, output=output)
+        cli.run(input=input, output=output)
         self.assertEqual(output.getvalue(),
                          b'[true, [0]]\n')
 
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(testutil.doctest_suite(view))
+    suite.addTest(testutil.doctest_suite(cli))
     suite.addTest(unittest.makeSuite(ViewServerTestCase, 'test'))
     return suite
 

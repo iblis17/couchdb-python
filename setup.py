@@ -29,7 +29,7 @@ else:
     setuptools_options = {
         'entry_points': {
             'console_scripts': [
-                'couchpy = couchdb.view:main',
+                'couchpy = couchdb.server.__main__:main',
                 'couchdb-dump = couchdb.tools.dump:main',
                 'couchdb-load = couchdb.tools.load:main',
                 'couchdb-replicate = couchdb.tools.replicate:main',
