@@ -17,7 +17,7 @@ def parse_mimetype(mimetype):
     params = {}
     for item in parts[1:]:
         if '=' in item:
-            key, value = item.split('=', 2)
+            key, value = item.split('=', 1)
         else:
             key, value = item, None
         params[key] = value
@@ -25,7 +25,7 @@ def parse_mimetype(mimetype):
     if fulltype == '*':
         fulltype = '*/*'
     if '/' in fulltype:
-        typeparts = fulltype.split('/', 2)
+        typeparts = fulltype.split('/', 1)
     else:
         typeparts = fulltype, None
     return typeparts[0], typeparts[1], params
