@@ -7,31 +7,12 @@ import logging
 import tempfile
 
 from codecs import BOM_UTF8
+from pkgutil import iter_modules
 from types import CodeType, FunctionType
 from types import ModuleType
 
 from couchdb import json, util
 from couchdb.server.exceptions import Error, FatalError, Forbidden
-
-try:
-    from pkgutil import iter_modules
-except ImportError:
-    try:
-        # Python 2.4
-        from pkg_resources import get_importer, zipimport
-
-        def iter_modules(paths):
-            for path in paths:
-                loader = get_importer(path)
-                if not isinstance(loader, zipimport.zipimporter):
-                    continue
-                names = loader.get_data('EGG-INFO/top_level.txt')
-                for name in names.split('\n')[:-1]:
-                    yield loader, name, None
-    except ImportError:
-        get_importer = None
-        iter_modules = None
-        zipimport = None
 
 __all__ = ['compile_func', 'require', 'DEFAULT_CONTEXT']
 
