@@ -9,7 +9,7 @@
 import unittest
 
 from couchdb.tests import client, couch_tests, design, couchhttp, \
-                          multipart, mapping, view, package, tools, \
+                          multipart, mapping, package, tools, \
                           loader
 
 
@@ -20,7 +20,6 @@ def suite():
     suite.addTest(couchhttp.suite())
     suite.addTest(multipart.suite())
     suite.addTest(mapping.suite())
-    suite.addTest(view.suite())
     suite.addTest(couch_tests.suite())
     suite.addTest(package.suite())
     suite.addTest(tools.suite())
