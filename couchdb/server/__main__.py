@@ -42,6 +42,7 @@ Options:
                           enable logging to the standard error stream
   --log-level=<level>     specify logging level (debug, info, warn, error).
                           Used info level if omitted.
+  --allow-get-update      allows GET requests to call update functions.
   --debug                 enable debug logging; requires --log-file to be
                           specified
 
@@ -64,7 +65,7 @@ def main():
         option_list, argument_list = getopt.gnu_getopt(
             sys.argv[1:], 'h',
             ['version', 'help', 'json-module=', 'debug', 'log-file=',
-             'log-level=']
+             'log-level=', 'allow-get-update']
         )
 
         db_version = None
@@ -84,6 +85,8 @@ def main():
                 qs_config['log_level'] = value.upper()
             elif option in ('--log-file',):
                 qs_config['log_file'] = value
+            elif option in ('--allow-get-update',):
+                qs_config['allow_get_update'] = True
 
         if message:
             sys.stdout.write(message)
