@@ -44,6 +44,9 @@ Options:
                           Used info level if omitted.
   --allow-get-update      allows GET requests to call update functions.
   --enable-eggs           enables support of eggs as modules.
+  --egg-cache=<path>      specifies egg cache dir. If omitted, PYTHON_EGG_CACHE
+                          environment variable value would be used or system
+                          temporary directory if variable not setted.
   --debug                 enable debug logging; requires --log-file to be
                           specified
 
@@ -66,7 +69,8 @@ def main():
         option_list, argument_list = getopt.gnu_getopt(
             sys.argv[1:], 'h',
             ['version', 'help', 'json-module=', 'debug', 'log-file=',
-             'log-level=', 'allow-get-update', 'enable-eggs']
+             'log-level=', 'allow-get-update', 'enable-eggs',
+             'egg-cache']
         )
 
         db_version = None
@@ -90,6 +94,8 @@ def main():
                 qs_config['allow_get_update'] = True
             elif option in ('--enable-eggs',):
                 qs_config['enable_eggs'] = True
+            elif option in ('--egg-cache',):
+                qs_config['egg_cache'] = value
 
         if message:
             sys.stdout.write(message)
