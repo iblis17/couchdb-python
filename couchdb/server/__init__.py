@@ -87,6 +87,11 @@ class BaseQueryServer(object):
         config options."""
         return self._config
 
+    @property
+    def version(self):
+        """Returns CouchDB version against QueryServer instance is suit."""
+        return self._version
+
     def handle_config(self, key, value):
         """Handles config options.
 

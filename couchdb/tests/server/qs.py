@@ -12,6 +12,14 @@ from couchdb.util import StringIO
 
 class BaseQueryServerTestCase(unittest.TestCase):
 
+    def test_set_version(self):
+        server = BaseQueryServer((1, 2, 3))
+        self.assertEqual(server.version, (1, 2, 3))
+
+    def test_set_latest_version_by_default(self):
+        server = BaseQueryServer()
+        self.assertEqual(server.version, (999, 999, 999))
+
     def test_set_config_option(self):
         server = BaseQueryServer(foo='bar')
         self.assertTrue('foo' in server.config)

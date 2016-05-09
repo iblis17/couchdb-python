@@ -47,6 +47,11 @@ Options:
   --egg-cache=<path>      specifies egg cache dir. If omitted, PYTHON_EGG_CACHE
                           environment variable value would be used or system
                           temporary directory if variable not setted.
+  --couchdb-version=<ver> define with which version of couchdb server will work
+                          default: latest implemented.
+                          Supports from 0.9.0 to 1.1.0 and trunk. Technicaly
+                          should work with 0.8.0.
+                          e.g.: --couchdb-version=0.9.0
   --debug                 enable debug logging; requires --log-file to be
                           specified
 
@@ -70,7 +75,7 @@ def main():
             sys.argv[1:], 'h',
             ['version', 'help', 'json-module=', 'debug', 'log-file=',
              'log-level=', 'allow-get-update', 'enable-eggs',
-             'egg-cache']
+             'egg-cache', 'couchdb-version=']
         )
 
         db_version = None
@@ -96,6 +101,8 @@ def main():
                 qs_config['enable_eggs'] = True
             elif option in ('--egg-cache',):
                 qs_config['egg_cache'] = value
+            elif option in ('--couchdb-version',):
+                db_version = _get_db_version(value)
 
         if message:
             sys.stdout.write(message)
@@ -110,6 +117,32 @@ def main():
         sys.exit(1)
 
     sys.exit(run(version=db_version, **qs_config))
+
+
+def _get_db_version(ver_str):
+    """Get version string from command line option
+
+    >>> assert _get_db_version('trunk') is None
+
+    >>> assert _get_db_version('TRUNK') is None
+
+    >>> _get_db_version('1.2.3')
+    (1, 2, 3)
+
+    >>> _get_db_version('1.1')
+    (1, 1, 0)
+
+    >>> _get_db_version('1')
+    (1, 0, 0)
+    """
+    if ver_str.lower() == 'trunk':
+        return
+
+    ver_str = ver_str.split('.')
+    while len(ver_str) < 3:
+        ver_str.append(0)
+
+    return tuple(map(int, ver_str[:3]))
 
 
 if __name__ == '__main__':
