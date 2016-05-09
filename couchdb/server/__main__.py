@@ -40,6 +40,8 @@ Options:
                           or 'json' are supported)
   --log-file=<file>       name of the file to write log messages to, or '-' to
                           enable logging to the standard error stream
+  --log-level=<level>     specify logging level (debug, info, warn, error).
+                          Used info level if omitted.
   --debug                 enable debug logging; requires --log-file to be
                           specified
 
@@ -61,7 +63,8 @@ def main():
     try:
         option_list, argument_list = getopt.gnu_getopt(
             sys.argv[1:], 'h',
-            ['version', 'help', 'json-module=', 'debug', 'log-file=']
+            ['version', 'help', 'json-module=', 'debug', 'log-file=',
+             'log-level=']
         )
 
         db_version = None
@@ -77,6 +80,8 @@ def main():
                 json.use(module=value)
             elif option in ('--debug',):
                 qs_config['log_level'] = 'DEBUG'
+            elif option in ('--log-level',):
+                qs_config['log_level'] = value.upper()
             elif option in ('--log-file',):
                 qs_config['log_file'] = value
 
