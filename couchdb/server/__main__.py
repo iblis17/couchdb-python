@@ -43,6 +43,7 @@ Options:
   --log-level=<level>     specify logging level (debug, info, warn, error).
                           Used info level if omitted.
   --allow-get-update      allows GET requests to call update functions.
+  --enable-eggs           enables support of eggs as modules.
   --debug                 enable debug logging; requires --log-file to be
                           specified
 
@@ -65,7 +66,7 @@ def main():
         option_list, argument_list = getopt.gnu_getopt(
             sys.argv[1:], 'h',
             ['version', 'help', 'json-module=', 'debug', 'log-file=',
-             'log-level=', 'allow-get-update']
+             'log-level=', 'allow-get-update', 'enable-eggs']
         )
 
         db_version = None
@@ -87,6 +88,8 @@ def main():
                 qs_config['log_file'] = value
             elif option in ('--allow-get-update',):
                 qs_config['allow_get_update'] = True
+            elif option in ('--enable-eggs',):
+                qs_config['enable_eggs'] = True
 
         if message:
             sys.stdout.write(message)
