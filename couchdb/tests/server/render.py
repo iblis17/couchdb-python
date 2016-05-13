@@ -55,6 +55,92 @@ class ShowTestCase(unittest.TestCase):
         }]
         self.assertEqual(resp, valid_resp)
 
+    def test_show_provides_old(self):
+        def func(doc, req):
+            def html():
+                return '<html><body>%s</body></html>' % doc['_id']
+
+            def xml():
+                return '<root><doc id="%s" /></root>' % doc['_id']
+
+            def foo():
+                return 'foo? bar! bar!'
+
+            register_type('foo', 'application/foo', 'application/x-foo')
+            return response_with(req, {
+                'html': html,
+                'xml': xml,
+                'foo': foo,
+                'fallback': 'html'
+            })
+
+        req = {'headers': {'Accept': 'text/html,application/atom+xml; q=0.9'}}
+        funsrc = dedent(getsource(func))
+        resp = render.show_doc(self.server, funsrc, self.doc, req)
+        self.assertTrue('text/html' in resp['headers']['Content-Type'])
+        self.assertEqual(resp['body'], '<html><body>couch</body></html>')
+
+    def test_show_provides_old_fallback(self):
+        def func(doc, req):
+            def foo():
+                return 'foo? bar! bar!'
+            register_type('foo', 'application/foo', 'application/x-foo')
+            return response_with(req, {
+                'foo': foo,
+                'fallback': 'foo'
+            })
+
+        req = {'headers': {'Accept': 'text/html,application/atom+xml; q=0.9'}}
+        funsrc = dedent(getsource(func))
+        resp = render.show_doc(self.server, funsrc, self.doc, req)
+        self.assertTrue('application/foo' in resp['headers']['Content-Type'])
+        self.assertEqual(resp['body'], 'foo? bar! bar!')
+
+    def test_not_acceptable_old(self):
+        def func(doc, req):
+            def foo():
+                return 'foo? bar! bar!'
+            register_type('foo', 'application/foo', 'application/x-foo')
+            return response_with(req, {
+                'foo': foo,
+            })
+
+        req = {'headers': {'Accept': 'text/html,application/atom+xml; q=0.9'}}
+        funsrc = dedent(getsource(func))
+        resp = render.show_doc(self.server, funsrc, self.doc, req)
+        self.assertTrue('code' in resp)
+        self.assertEqual(resp['code'], 406)
+
+    def test_nowhere_to_fallback(self):
+        def func(doc, req):
+            def foo():
+                return 'foo? bar! bar!'
+            register_type('foo', 'application/foo', 'application/x-foo')
+            return response_with(req, {
+                'foo': foo,
+                'fallback': 'htnl'
+            })
+
+        req = {'headers': {'Accept': 'text/html,application/atom+xml; q=0.9'}}
+        funsrc = dedent(getsource(func))
+        resp = render.show_doc(self.server, funsrc, self.doc, req)
+        self.assertTrue('code' in resp)
+        self.assertEqual(resp['code'], 406)
+
+    def test_error_in_resonse_with_handler_function(self):
+        def func(doc, req):
+            def foo():
+                raise Error('foo', 'bar')
+            register_type('foo', 'application/foo', 'application/x-foo')
+            return response_with(req, {
+                'foo': foo,
+            })
+
+        req = {'headers': {'Accept': 'application/foo'}}
+        funsrc = dedent(getsource(func))
+        self.assertRaises(exceptions.Error, render.show_doc,
+                          self.server, funsrc, self.doc, req)
+
     def test_python_exception_in_show_doc(self):
         def func(doc, req):
             1/0
