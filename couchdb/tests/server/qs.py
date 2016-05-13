@@ -286,6 +286,11 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         self.assertTrue(server.reset({'foo': 'bar'}))
         self.assertTrue('foo' in server.query_config)
 
+    def test_add_doc(self):
+        server = self.server((0, 11, 0))
+        self.assertTrue(server.add_ddoc({'_id': 'relax', 'at': 'couch'}))
+        self.assertEqual(server.ddocs.cache['relax']['at'], 'couch')
+
 
 def suite():
     suite = unittest.TestSuite()

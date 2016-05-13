@@ -311,8 +311,14 @@ class SimpleQueryServer(BaseQueryServer):
         self.commands['reset'] = state.reset
         self.commands['add_fun'] = state.add_fun
 
+        elif self.version >= (0, 11, 0):
+            ddoc_commands = {}
+
         if self.version >= (1, 1, 0):
             self.commands['add_lib'] = state.add_lib
+
+        if self.version >= (0, 11, 0):
+            self.commands['ddoc'] = ddoc.DDoc(ddoc_commands)
 
     def add_lib(self, mod):
         """Runs ``add_lib`` command.
@@ -338,6 +344,18 @@ class SimpleQueryServer(BaseQueryServer):
         """
         funsrc = maybe_extract_source(fun)
         return self._process_request(['add_fun', funsrc])
+
+    def add_ddoc(self, ddoc):
+        """Runs ``ddoc`` command to teach query server new design document.
+
+        :param ddoc: Design document. Should contains ``_id`` key.
+        :type ddoc: dict
+
+        :return: True
+
+        .. versionadded:: 0.11.0
+        """
+        return self._process_request(['ddoc', 'new', ddoc['_id'], ddoc])
 
     def reset(self, config=None):
         """Runs ``reset`` command.
