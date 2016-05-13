@@ -2,9 +2,35 @@
 #
 import logging
 
-__all__ = ('add_fun', 'add_lib')
+__all__ = ('add_fun', 'add_lib', 'reset')
 
 log = logging.getLogger(__name__)
+
+
+def reset(server, config=None):
+    """Resets query server state.
+
+    :command: reset
+
+    :param server: Query server instance.
+    :type server: :class:`~couchdb.server.BaseQueryServer`
+
+    :param config: Optional dict argument to set up query config.
+    :type config: dict
+
+    :return: True
+    :rtype: bool
+    """
+    log.debug('Reset server state')
+    del server.state['functions'][:]
+    del server.state['functions_src'][:]
+    server.state['query_config'].clear()
+    if config is not None:
+        log.debug('Set new query config:\n%s', config)
+        server.state['query_config'].update(config)
+    if server.version >= (1, 1, 0):
+        server.state['view_lib'] = ''
+    return True
 
 
 def add_fun(server, funsrc):

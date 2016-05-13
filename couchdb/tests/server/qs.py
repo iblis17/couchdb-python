@@ -275,6 +275,17 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         self.assertTrue(server.add_fun(foo))
         self.assertEqual(server.functions[0](), 'bar')
 
+    def test_reset(self):
+        server = self.server()
+        server.query_config['foo'] = 'bar'
+        self.assertTrue(server.reset())
+        self.assertTrue('foo' not in server.query_config)
+
+    def test_reset_set_new_config(self):
+        server = self.server()
+        self.assertTrue(server.reset({'foo': 'bar'}))
+        self.assertTrue('foo' in server.query_config)
+
 
 def suite():
     suite = unittest.TestSuite()

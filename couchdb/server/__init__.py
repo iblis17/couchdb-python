@@ -308,6 +308,7 @@ class SimpleQueryServer(BaseQueryServer):
     def __init__(self, *args, **kwargs):
         super(SimpleQueryServer, self).__init__(*args, **kwargs)
 
+        self.commands['reset'] = state.reset
         self.commands['add_fun'] = state.add_fun
 
         if self.version >= (1, 1, 0):
@@ -337,6 +338,25 @@ class SimpleQueryServer(BaseQueryServer):
         """
         funsrc = maybe_extract_source(fun)
         return self._process_request(['add_fun', funsrc])
+
+    def reset(self, config=None):
+        """Runs ``reset`` command.
+
+        :param config: New query server config options.
+        :type config: dict
+
+        :return: True
+
+        .. versionadded:: 0.8.0
+        """
+        if config:
+            return self._process_request(['reset', config])
+        return self._process_request(['reset'])
+
+    @property
+    def query_config(self):
+        """Returns query server config which :meth:`reset` operates with"""
+        return self.state['query_config']
 
     @property
     def view_lib(self):

@@ -41,6 +41,29 @@ class StateTestCase(unittest.TestCase):
         self.assertTrue(state.add_lib(server, {'foo': 'bar'}))
         self.assertEqual(server.state['view_lib'], {'foo': 'bar'})
 
+    def test_reset(self):
+        """should return True. always."""
+        server = self.server
+        self.assertTrue(state.reset(server))
+
+    def test_reset_clears_cache(self):
+        """should clear function cache and query config"""
+        server = self.server
+        server.state['functions'].append('foo')
+        server.state['functions_src'].append('bar')
+        server.state['query_config']['baz'] = 42
+        state.reset(server)
+        self.assertEqual(server.state['functions'], [])
+        self.assertEqual(server.state['functions_src'], [])
+        self.assertEqual(server.state['query_config'], {})
+
+    def test_reset_and_update_query_config(self):
+        """should reset query config and set new values to it"""
+        server = self.server
+        server.state['query_config']['foo'] = 'bar'
+        state.reset(server, {'foo': 'baz'})
+        self.assertEqual(server.state['query_config'], {'foo': 'baz'})
+
 
 def suite():
     suite = unittest.TestSuite()
