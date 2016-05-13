@@ -311,6 +311,8 @@ class SimpleQueryServer(BaseQueryServer):
         self.commands['reset'] = state.reset
         self.commands['add_fun'] = state.add_fun
 
+        self.commands['map_doc'] = views.map_doc
+
         elif self.version >= (0, 11, 0):
             ddoc_commands = {}
 
@@ -356,6 +358,19 @@ class SimpleQueryServer(BaseQueryServer):
         .. versionadded:: 0.11.0
         """
         return self._process_request(['ddoc', 'new', ddoc['_id'], ddoc])
+
+    def map_doc(self, doc):
+        """Runs ``map_doc`` command to apply known map functions to doc.
+        Requires at least one stored function via :meth:`add_fun`.
+
+        :param doc: Document object.
+        :type doc: dict
+
+        :return: List of key-values pairs per applied function.
+
+        .. versionadded:: 0.8.0
+        """
+        return self._process_request(['map_doc', doc])
 
     def reset(self, config=None):
         """Runs ``reset`` command.

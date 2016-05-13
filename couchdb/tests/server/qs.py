@@ -291,6 +291,23 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         self.assertTrue(server.add_ddoc({'_id': 'relax', 'at': 'couch'}))
         self.assertEqual(server.ddocs.cache['relax']['at'], 'couch')
 
+    def test_map_doc(self):
+        def map_fun_1(doc):
+            yield doc['_id'], 1
+
+        def map_fun_2(doc):
+            yield doc['_id'], 2
+            yield doc['_id'], 3
+
+        server = self.server()
+        self.assertTrue(server.add_fun(map_fun_1))
+        self.assertTrue(server.add_fun(map_fun_2))
+        kvs = server.map_doc({'_id': 'foo'})
+        self.assertEqual(
+            kvs,
+            [[['foo', 1]], [['foo', 2], ['foo', 3]]]
+        )
+
 
 def suite():
     suite = unittest.TestSuite()
