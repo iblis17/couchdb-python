@@ -16,9 +16,32 @@ __all__ = ('show', 'list', 'update',
 log = logging.getLogger(__name__)
 
 
+def maybe_wrap_response(resp):
+    if isinstance(resp, util.strbase):
+        return {'body': resp}
+    else:
+        return resp
+
+
 ################################################################################
 # Old render used only for 0.9.x
 #
+
+def render_function(func, args):
+    try:
+        resp = maybe_wrap_response(func(*args))
+        if isinstance(resp, (dict,) + util.strbase):
+            return resp
+        else:
+            msg = 'Invalid response object %r ; type: %r' % (resp, type(resp))
+            log.error(msg)
+            raise Error('render_error', msg)
+    except ViewServerException:
+        raise
+    except Exception as err:
+        log.exception('Unexpected exception occurred in %s', func)
+        raise Error('render_error', str(err))
+
 
 def show_doc(server, funsrc, doc, req):
     """Implementation of `show_doc` command.
