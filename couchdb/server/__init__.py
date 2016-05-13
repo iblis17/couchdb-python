@@ -88,6 +88,12 @@ class BaseQueryServer(object):
         return self._config
 
     @property
+    def state(self):
+        """Query server state dictionary. Also contains ``query_config``
+        dictionary which specified by CouchDB server configuration."""
+        return self._state
+
+    @property
     def commands(self):
         """Dictionary of supported command names (keys) and their handlers
         (values)."""
