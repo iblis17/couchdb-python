@@ -268,6 +268,13 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         self.assertTrue(server.add_lib({'foo': 'bar'}))
         self.assertEqual(server.view_lib, {'foo': 'bar'})
 
+    def test_add_fun(self):
+        def foo():
+            return 'bar'
+        server = self.server()
+        self.assertTrue(server.add_fun(foo))
+        self.assertEqual(server.functions[0](), 'bar')
+
 
 def suite():
     suite = unittest.TestSuite()

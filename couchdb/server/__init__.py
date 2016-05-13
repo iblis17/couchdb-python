@@ -308,6 +308,8 @@ class SimpleQueryServer(BaseQueryServer):
     def __init__(self, *args, **kwargs):
         super(SimpleQueryServer, self).__init__(*args, **kwargs)
 
+        self.commands['add_fun'] = state.add_fun
+
         if self.version >= (1, 1, 0):
             self.commands['add_lib'] = state.add_lib
 
@@ -322,6 +324,19 @@ class SimpleQueryServer(BaseQueryServer):
         .. versionadded:: 1.1.0
         """
         return self._process_request(['add_lib', mod])
+
+    def add_fun(self, fun):
+        """Runs ``add_fun`` command.
+
+        :param fun: Function object or source string.
+        :type fun: function or str
+
+        :return: True
+
+        .. versionadded:: 0.8.0
+        """
+        funsrc = maybe_extract_source(fun)
+        return self._process_request(['add_fun', funsrc])
 
     @property
     def view_lib(self):
