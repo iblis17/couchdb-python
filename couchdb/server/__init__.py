@@ -307,3 +307,23 @@ class SimpleQueryServer(BaseQueryServer):
 
     def __init__(self, *args, **kwargs):
         super(SimpleQueryServer, self).__init__(*args, **kwargs)
+
+        if self.version >= (1, 1, 0):
+            self.commands['add_lib'] = state.add_lib
+
+    def add_lib(self, mod):
+        """Runs ``add_lib`` command.
+
+        :param mod: Module in CommonJS style
+        :type mod: dict
+
+        :return: True
+
+        .. versionadded:: 1.1.0
+        """
+        return self._process_request(['add_lib', mod])
+
+    @property
+    def view_lib(self):
+        """Returns stored view lib which could be added by :meth:`add_lib`"""
+        return self.state['view_lib']

@@ -263,6 +263,11 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         self.output = StringIO()
         self.server = partial(SimpleQueryServer, output=self.output)
 
+    def test_add_lib(self):
+        server = SimpleQueryServer((1, 1, 0))
+        self.assertTrue(server.add_lib({'foo': 'bar'}))
+        self.assertEqual(server.view_lib, {'foo': 'bar'})
+
 
 def suite():
     suite = unittest.TestSuite()
