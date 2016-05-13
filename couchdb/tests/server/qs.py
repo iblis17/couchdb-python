@@ -345,6 +345,37 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         reduced = server.rereduce([red_fun], list(range(10)))
         self.assertEqual(reduced, [True, [45]])
 
+    def test_show_doc(self):
+        def func(doc, req):
+            def html():
+                return '<html><body>%s</body></html>' % doc['_id']
+
+            def xml():
+                return '<root><doc id="%s" /></root>' % doc['_id']
+
+            def foo():
+                return 'foo? bar! bar!'
+
+            register_type('foo', 'application/foo', 'application/x-foo')
+            return response_with(req, {
+                'html': html,
+                'xml': xml,
+                'foo': foo,
+                'fallback': 'html'
+            })
+
+        server = self.server((0, 9, 0))
+        doc = {'_id': 'couch'}
+        req = {'headers': {'Accept': 'text/html,application/atom+xml; q=0.9'}}
+        resp = server.show_doc(func, doc, req)
+        self.assertEqual(
+            resp,
+            {
+                'headers': {'Content-Type': 'text/html; charset=utf-8'},
+                'body': '<html><body>couch</body></html>'
+            }
+        )
+
 
 def suite():
     suite = unittest.TestSuite()

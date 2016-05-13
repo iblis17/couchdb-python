@@ -319,6 +319,9 @@ class SimpleQueryServer(BaseQueryServer):
         self.commands['reduce'] = views.reduce
         self.commands['rereduce'] = views.rereduce
 
+        if (0, 9, 0) <= self.version < (0, 10, 0):
+            self.commands['show_doc'] = render.show_doc
+
         elif self.version >= (0, 11, 0):
             ddoc_commands = {}
 
@@ -425,6 +428,26 @@ class SimpleQueryServer(BaseQueryServer):
         if config:
             return self._process_request(['reset', config])
         return self._process_request(['reset'])
+
+    def show_doc(self, fun, doc=None, req=None):
+        """Runs ``show_doc`` command.
+
+        :param fun: Function object or source string.
+        :type fun: function or str
+
+        :param doc: Document object.
+        :type doc: dict
+
+        :param req: Request object.
+        :type req: dict
+
+        :return: Two-element list with `resp` token and Response object.
+
+        .. versionadded:: 0.9.0
+        .. deprecated:: 0.10.0 Use :meth:`show` instead.
+        """
+        funsrc = maybe_extract_source(fun)
+        return self._process_request(['show_doc', funsrc, doc or {}, req or {}])
 
     def ddoc_cmd(self, ddoc_id, cmd, func_path, func_args):
         """Runs ``ddoc`` command.
