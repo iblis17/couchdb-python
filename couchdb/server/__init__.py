@@ -301,6 +301,10 @@ class BaseQueryServer(object):
                                         'unknown command {0}'.format(cmd))
         return self.commands[cmd](self, *args)
 
+    def is_reduce_limited(self):
+        """Checks if output of reduce function is limited."""
+        return self.state['query_config'].get('reduce_limit', False)
+
 
 class SimpleQueryServer(BaseQueryServer):
     """Implements Python query server with high level API."""
@@ -312,6 +316,7 @@ class SimpleQueryServer(BaseQueryServer):
         self.commands['add_fun'] = state.add_fun
 
         self.commands['map_doc'] = views.map_doc
+        self.commands['reduce'] = views.reduce
 
         elif self.version >= (0, 11, 0):
             ddoc_commands = {}
@@ -371,6 +376,23 @@ class SimpleQueryServer(BaseQueryServer):
         .. versionadded:: 0.8.0
         """
         return self._process_request(['map_doc', doc])
+
+    def reduce(self, funs, keysvalues):
+        """Runs ``reduce`` command.
+
+        :param funs: List of function objects or source strings.
+        :type funs: list
+
+        :param keysvalues: List of 2-element tuples with key and value.
+        :type: list
+
+        :return: Two-element list with True value and list of values per
+                 reduce function.
+
+        .. versionadded:: 0.8.0
+        """
+        funsrcs = [maybe_extract_source(fun) for fun in funs]
+        return self._process_request(['reduce', funsrcs, keysvalues])
 
     def reset(self, config=None):
         """Runs ``reset`` command.

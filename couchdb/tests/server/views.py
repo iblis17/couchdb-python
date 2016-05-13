@@ -118,9 +118,103 @@ class MapTestCase(unittest.TestCase):
         views.map_doc(self.server, doc)
 
 
+class ReduceTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.server = MockQueryServer()
+
+    def test_reduce(self):
+        """should reduce map function result"""
+        state.add_fun(
+            self.server,
+            'def mapfun(doc):\n'
+            '  return ([doc["_id"], i] for i in range(10))'
+        )
+        result = views.map_doc(self.server, {'_id': 'foo'})
+        rresult = views.reduce(
+            self.server,
+            ['def reducefun(keys, values): return sum(values)'],
+            result[0]
+        )
+        self.assertEqual(rresult, [True, [45]])
+
+    def test_reduce_by_many_functions(self):
+        """should proceed map keys-values result by multiple reduce functions"""
+        state.add_fun(
+            self.server,
+            'def mapfun(doc):\n'
+            '  return ([doc["_id"], i] for i in range(10))'
+        )
+        result = views.map_doc(self.server, {'_id': 'foo'})
+        rresult = views.reduce(
+            self.server,
+            ['def reducefun(keys, values): return sum(values)',
+             'def reducefun(keys, values): return max(values)',
+             'def reducefun(keys, values): return min(values)'],
+            result[0]
+        )
+        self.assertEqual(rresult, [True, [45, 9, 0]])
+
+    def test_fail_if_reduce_output_too_large(self):
+        """should fail if reduce output length is greater than 200 chars
+        and twice longer than initial data."""
+        state.reset(self.server, {'reduce_limit': True})
+        state.add_fun(
+            self.server,
+            'def mapfun(doc):\n'
+            '  return ([doc["_id"], i] for i in range(10))'
+        )
+        result = views.map_doc(self.server, {'_id': 'foo'})
+
+        try:
+            views.reduce(
+                self.server,
+                ['def reducefun(keys, values): return "-" * 200'],
+                result[0]
+            )
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.Error))
+            self.assertEqual(err.args[0], 'reduce_overflow_error')
+        else:
+            self.fail('Error exception expected')
+
+    def test_rethrow_viewserver_exception_as_is(self):
+        """should rethrow any QS exception as is"""
+        self.assertRaises(
+            exceptions.FatalError,
+            views.reduce,
+            self.server,
+            ['def reducefun(keys, values):\n'
+             '  raise FatalError("let it crush!")'],
+            [['foo', 'bar'], ['bar', 'baz']]
+        )
+
+    def test_raise_error_exception_on_any_python_one(self):
+        """should raise QS Error exception on any Python one"""
+        try:
+            views.reduce(
+                self.server,
+                ['def reducefun(keys, values): return foo'],
+                [['foo', 'bar'], ['bar', 'baz']]
+            )
+        except Exception as err:
+            self.assertTrue(err, exceptions.Error)
+            self.assertEqual(err.args[0], NameError.__name__)
+
+    def test_reduce_empty_map_result(self):
+        """should not fall on empty map result as issue #163 described"""
+        res = views.reduce(
+            self.server,
+            ['def reducefun(keys, values): return sum(values)'],
+            []
+        )
+        self.assertEqual(res, [True, [0]])
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(MapTestCase, 'test'))
+    suite.addTest(unittest.makeSuite(ReduceTestCase, 'test'))
     return suite
 
 

@@ -308,6 +308,36 @@ class SimpleQueryServerTestCase(unittest.TestCase):
             [[['foo', 1]], [['foo', 2], ['foo', 3]]]
         )
 
+    def test_reduce(self):
+        def map_fun_1(doc):
+            yield doc['_id'], 1
+
+        def map_fun_2(doc):
+            yield doc['_id'], 2
+            yield doc['_id'], 3
+
+        def red_fun_1(keys, values):
+            return sum(values)
+
+        def red_fun_2(keys, values):
+            return min(values)
+
+        server = self.server()
+        self.assertTrue(server.add_fun(map_fun_1))
+        self.assertTrue(server.add_fun(map_fun_2))
+        kvs = server.map_doc({'_id': 'foo'})
+        reduced = server.reduce([red_fun_1, red_fun_2], kvs[0])
+        self.assertEqual(reduced, [True, [1, 1]])
+        reduced = server.reduce([red_fun_1, red_fun_2], kvs[1])
+        self.assertEqual(reduced, [True, [5, 2]])
+
+    def test_reduce_no_records(self):
+        def red_fun(keys, values):
+            return sum(values)
+        server = self.server()
+        reduced = server.reduce([red_fun], [])
+        self.assertEqual(reduced, [True, [0]])
+
 
 def suite():
     suite = unittest.TestSuite()
