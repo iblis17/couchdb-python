@@ -88,6 +88,12 @@ class BaseQueryServer(object):
         return self._config
 
     @property
+    def commands(self):
+        """Dictionary of supported command names (keys) and their handlers
+        (values)."""
+        return self._commands
+
+    @property
     def version(self):
         """Returns CouchDB version against QueryServer instance is suit."""
         return self._version

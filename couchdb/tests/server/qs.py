@@ -34,6 +34,19 @@ class BaseQueryServerTestCase(unittest.TestCase):
         self.assertTrue('baz' in server.config)
         self.assertEqual(server.config['baz'], 'bar')
 
+    def test_pass_server_instance_to_command_handler(self):
+        server = BaseQueryServer()
+        server.commands['foo'] = lambda s, x: server is s
+        self.assertTrue(server.process_request(['foo', 'bar']))
+
+    def test_raise_fatal_error_on_unknown_command(self):
+        server = BaseQueryServer(output=StringIO())
+        try:
+            server.process_request(['foo', 'bar'])
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.FatalError))
+            self.assertEqual(err.args[0], 'unknown_command')
+
     def test_process_request(self):
         server = BaseQueryServer()
         server.commands['foo'] = lambda s, x: x == 42
