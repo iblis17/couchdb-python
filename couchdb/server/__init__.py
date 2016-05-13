@@ -234,6 +234,25 @@ class BaseQueryServer(object):
         """
         return self._respond(data)
 
+    def log(self, message):
+        """Log message to CouchDB output stream.
+
+        .. versionchanged:: 0.11.0
+            Log message format has changed from ``{"log": message}`` to
+            ``["log", message]``
+        """
+        if self.version < (0, 11, 0):
+            if message is None:
+                message = 'Error: attempting to log message of None'
+            if not isinstance(message, util.strbase):
+                message = json.encode(message)
+            res = {'log': message}
+        else:
+            if not isinstance(message, util.strbase):
+                message = json.encode(message)
+            res = ['log', message]
+        self.respond(res)
+
     def process_request(self, message):
         """Process single request message.
 

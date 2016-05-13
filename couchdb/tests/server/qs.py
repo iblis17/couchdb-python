@@ -229,6 +229,33 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server.respond({'bar': 'baz'})
         self.assertEqual(output.getvalue(), b'["foo"]\n{"bar": "baz"}\n')
 
+    def test_log_oldstyle(self):
+        output = StringIO()
+        server = BaseQueryServer(version=(0, 9, 0), output=output)
+        server.log(['foo', {'bar': 'baz'}, 42])
+        self.assertEqual(
+            output.getvalue(),
+            b'{"log": "[\\"foo\\", {\\"bar\\": \\"baz\\"}, 42]"}\n'
+        )
+
+    def test_log_none_message(self):
+        output = StringIO()
+        server = BaseQueryServer(version=(0, 9, 0), output=output)
+        server.log(None)
+        self.assertEqual(
+            output.getvalue(),
+            b'{"log": "Error: attempting to log message of None"}\n'
+        )
+
+    def test_log_newstyle(self):
+        output = StringIO()
+        server = BaseQueryServer(version=(0, 11, 0), output=output)
+        server.log(['foo', {'bar': 'baz'}, 42])
+        self.assertEqual(
+            output.getvalue(),
+            b'["log", "[\\"foo\\", {\\"bar\\": \\"baz\\"}, 42]"]\n'
+        )
+
 
 class SimpleQueryServerTestCase(unittest.TestCase):
 
