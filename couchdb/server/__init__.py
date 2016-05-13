@@ -253,6 +253,27 @@ class BaseQueryServer(object):
             res = ['log', message]
         self.respond(res)
 
+    def compile(self, funsrc, ddoc=None, context=None, **options):
+        """Compiles function with special server context.
+
+        :param funsrc: Function source code.
+        :type funsrc: str
+
+        :param ddoc: Design document object.
+        :type ddoc: dict
+
+        :param context: Custom context for compiled function.
+        :type context: dict
+
+        :param options: Compiler config options.
+        """
+        if context is None:
+            context = {}
+
+        context.setdefault('log', self.log)
+        options.update(self.config)
+        return compiler.compile_func(funsrc, ddoc, context, **options)
+
     def process_request(self, message):
         """Process single request message.
 
