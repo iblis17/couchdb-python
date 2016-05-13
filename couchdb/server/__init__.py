@@ -98,6 +98,23 @@ class BaseQueryServer(object):
         """Returns CouchDB version against QueryServer instance is suit."""
         return self._version
 
+    def handle_exception(self, exc_type, exc_value, exc_traceback, default=None):
+        """Exception dispatcher.
+
+        :param exc_type: Exception type.
+        :param exc_value: Exception instance.
+        :param exc_traceback: Actual exception traceback.
+
+        :param default: Custom default handler.
+        :type default: callable
+        """
+        handler = {
+            exceptions.Forbidden: self.handle_forbidden_error,
+            exceptions.Error: self.handle_qs_error,
+            exceptions.FatalError: self.handle_fatal_error,
+        }.get(exc_type, default or self.handle_python_exception)
+        return handler(exc_type, exc_value, exc_traceback)
+
     def handle_config(self, key, value):
         """Handles config options.
 
@@ -113,6 +130,71 @@ class BaseQueryServer(object):
             getattr(self, handler_name)(value)
         else:
             self.config[key] = value
+
+    def handle_fatal_error(self, exc_type, exc_value, exc_traceback):
+        """Handler for :exc:`~couchdb.server.exceptions.FatalError` exceptions.
+
+        Terminates query server.
+
+        :param exc_type: Exception type.
+        :param exc_value: Exception instance.
+        :param exc_traceback: Actual exception traceback.
+        """
+        log.exception('FatalError `%s` occurred: %s', *exc_value.args)
+        if self.version < (0, 11, 0):
+            id, reason = exc_value.args
+            retval = {'error': id, 'reason': reason}
+        else:
+            retval = ['error'] + list(exc_value.args)
+        self.respond(retval)
+        log.critical('That was a critical error, exiting')
+        raise
+
+    def handle_qs_error(self, exc_type, exc_value, exc_traceback):
+        """Handler for :exc:`~couchdb.server.exceptions.Error` exceptions.
+
+        :param exc_type: Exception type.
+        :param exc_value: Exception instance.
+        :param exc_traceback: Actual exception traceback.
+        """
+        log.exception('Error `%s` occurred: %s', *exc_value.args)
+        if self.version < (0, 11, 0):
+            id, reason = exc_value.args
+            retval = {'error': id, 'reason': reason}
+        else:
+            retval = ['error'] + list(exc_value.args)
+        self.respond(retval)
+
+    def handle_forbidden_error(self, exc_type, exc_value, exc_traceback):
+        """Handler for :exc:`~couchdb.server.exceptions.Forbidden` exceptions.
+
+        :param exc_type: Exception type.
+        :param exc_value: Exception instance.
+        :param exc_traceback: Actual exception traceback.
+        """
+        reason = exc_value.args[0]
+        log.warning('ForbiddenError occurred: %s', reason)
+        self.respond({'forbidden': reason})
+
+    def handle_python_exception(self, exc_type, exc_value, exc_traceback):
+        """Handler for any Python occurred exception.
+
+        Terminates query server.
+
+        :param exc_type: Exception type.
+        :param exc_value: Exception instance.
+        :param exc_traceback: Actual exception traceback.
+        """
+        err_name = exc_type.__name__
+        err_msg = str(exc_value)
+        log.exception('%s: %s', err_name, err_msg)
+        if self.version < (0, 11, 0):
+            retval = {'error': err_name, 'reason': err_msg}
+        else:
+            retval = ['error', err_name, err_msg]
+        self.respond(retval)
+        log.critical('That was a critical error, exiting')
+        raise
 
     def serve_forever(self):
         """Query server main loop. Runs forever or till input stream is opened.

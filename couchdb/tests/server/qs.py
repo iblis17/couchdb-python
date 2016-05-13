@@ -47,6 +47,167 @@ class BaseQueryServerTestCase(unittest.TestCase):
             self.assertTrue(isinstance(err, exceptions.FatalError))
             self.assertEqual(err.args[0], 'unknown_command')
 
+    def test_handle_fatal_error(self):
+        def command_foo(*a, **k):
+            raise exceptions.FatalError('foo', 'bar')
+
+        def maybe_fatal_error(func):
+            def wrapper(exc_type, exc_value, exc_traceback):
+                assert exc_type is exceptions.FatalError
+                return func(exc_type, exc_value, exc_traceback)
+            return wrapper
+
+        output = StringIO()
+        server = BaseQueryServer(output=output)
+        server.handle_fatal_error = maybe_fatal_error(server.handle_fatal_error)
+        server.commands['foo'] = command_foo
+        try:
+            server.process_request(['foo', 'bar'])
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.FatalError))
+
+    def test_response_for_fatal_error_oldstyle(self):
+        def command_foo(*a, **k):
+            raise exceptions.FatalError('foo', 'bar')
+
+        output = StringIO()
+        server = BaseQueryServer(version=(0, 9, 0), output=output)
+        server.commands['foo'] = command_foo
+        expected = {'reason': 'bar', 'error': 'foo'}
+        try:
+            server.process_request(['foo', 'bar'])
+        except Exception:
+            pass
+        self.assertEqual(json.decode(output.getvalue()), expected)
+
+    def test_response_for_fatal_error_newstyle(self):
+        def command_foo(*a, **k):
+            raise exceptions.Error('foo', 'bar')
+
+        output = StringIO()
+        server = BaseQueryServer(version=(0, 11, 0), output=output)
+        server.commands['foo'] = command_foo
+        try:
+            server.process_request(['foo', 'bar'])
+        except Exception:
+            pass
+        self.assertEqual(output.getvalue(), b'["error", "foo", "bar"]\n')
+
+    def test_handle_qs_error(self):
+        def command_foo(*a, **k):
+            raise exceptions.Error('foo', 'bar')
+
+        def maybe_qs_error(func):
+            def wrapper(exc_type, exc_value, exc_traceback):
+                assert exc_type is exceptions.Error
+                func.__self__.mock_last_error = exc_type
+                return func(exc_type, exc_value, exc_traceback)
+
+            return wrapper
+
+        output = StringIO()
+        server = BaseQueryServer(output=output)
+        server.handle_qs_error = maybe_qs_error(server.handle_qs_error)
+        server.commands['foo'] = command_foo
+        server.process_request(['foo', 'bar'])
+
+    def test_response_for_qs_error_oldstyle(self):
+        def command_foo(*a, **k):
+            raise exceptions.Error('foo', 'bar')
+        output = StringIO()
+        server = BaseQueryServer(version=(0, 9, 0), output=output)
+        server.commands['foo'] = command_foo
+        server.process_request(['foo', 'bar'])
+        expected = {'reason': 'bar', 'error': 'foo'}
+        self.assertEqual(json.decode(output.getvalue()), expected)
+
+    def test_response_for_qs_error_newstyle(self):
+        def command_foo(*a, **k):
+            raise exceptions.Error('foo', 'bar')
+
+        output = StringIO()
+        server = BaseQueryServer(version=(0, 11, 0), output=output)
+        server.commands['foo'] = command_foo
+        server.process_request(['foo', 'bar'])
+        self.assertEqual(output.getvalue(), b'["error", "foo", "bar"]\n')
+
+    def test_handle_forbidden_error(self):
+        def command_foo(*a, **k):
+            raise exceptions.Forbidden('foo')
+
+        def maybe_forbidden_error(func):
+            def wrapper(exc_type, exc_value, exc_traceback):
+                assert exc_type is exceptions.Forbidden
+                return func(exc_type, exc_value, exc_traceback)
+
+            return wrapper
+
+        output = StringIO()
+        server = BaseQueryServer(output=output)
+        server.handle_forbidden_error = maybe_forbidden_error(server.handle_forbidden_error)
+        server.commands['foo'] = command_foo
+        server.process_request(['foo', 'bar'])
+
+    def test_response_for_forbidden_error(self):
+        def command_foo(*a, **k):
+            raise exceptions.Forbidden('foo')
+
+        output = StringIO()
+        server = BaseQueryServer(output=output)
+        server.commands['foo'] = command_foo
+        server.process_request(['foo', 'bar'])
+        self.assertEqual(output.getvalue(), b'{"forbidden": "foo"}\n')
+
+    def test_handle_python_exception(self):
+        def command_foo(*a, **k):
+            raise ValueError('that was a typo')
+
+        def maybe_py_error(func):
+            def wrapper(exc_type, exc_value, exc_traceback):
+                assert exc_type is ValueError
+                return func(exc_type, exc_value, exc_traceback)
+
+            return wrapper
+
+        output = StringIO()
+        server = BaseQueryServer(output=output)
+        server.handle_python_exception = maybe_py_error(server.handle_python_exception)
+        server.commands['foo'] = command_foo
+        try:
+            server.process_request(['foo', 'bar'])
+        except Exception as err:
+            self.assertTrue(isinstance(err, ValueError))
+
+    def test_response_python_exception_oldstyle(self):
+        def command_foo(*a, **k):
+            raise ValueError('that was a typo')
+
+        output = StringIO()
+        server = BaseQueryServer(version=(0, 9, 0), output=output)
+        server.commands['foo'] = command_foo
+        expected = {'reason': 'that was a typo', 'error': 'ValueError'}
+        try:
+            server.process_request(['foo', 'bar'])
+        except Exception:
+            pass
+        self.assertEqual(json.decode(output.getvalue()), expected)
+
+    def test_response_python_exception_newstyle(self):
+        def command_foo(*a, **k):
+            raise ValueError('that was a typo')
+
+        output = StringIO()
+        server = BaseQueryServer(version=(0, 11, 0), output=output)
+        server.commands['foo'] = command_foo
+        try:
+            server.process_request(['foo', 'bar'])
+        except Exception:
+            pass
+        self.assertEqual(
+            output.getvalue(),
+            b'["error", "ValueError", "that was a typo"]\n'
+        )
+
     def test_process_request(self):
         server = BaseQueryServer()
         server.commands['foo'] = lambda s, x: x == 42
