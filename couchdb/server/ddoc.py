@@ -58,3 +58,52 @@ class DDoc(object):
         log.debug('Cache design document `%s`', ddoc_id)
         self.cache[ddoc_id] = ddoc
         return True
+
+    def run_ddoc_func(self, server, ddoc_id, fun_path, fun_args):
+        """
+        :param server: Query server instance.
+        :type server: :class:`~couchdb.server.BaseQueryServer`
+
+        :param ddoc_id: Design document id, holder of requested function.
+        :type ddoc_id: unicode
+
+        :param fun_path: List of key by which request function could be found
+                         within ddoc object. First element of this list is
+                         ddoc command.
+        :type fun_path: list
+
+        :param fun_args: List of function arguments.
+        :type fun_args: list
+
+        :return: Result of called design function if any available.
+                 For example, lists doesn't explicitly returns any value.
+
+        .. versionadded:: 0.11.0
+        """
+        ddoc = self.cache.get(ddoc_id)
+        if ddoc is None:
+            msg = 'Uncached design document: {0}'.format(ddoc_id)
+            log.error(msg)
+            raise FatalError('query_protocol_error', msg)
+        cmd = fun_path[0]
+        if cmd not in self.commands:
+            msg = 'Unknown ddoc command `{0}`'.format(cmd)
+            log.error(msg)
+            raise FatalError('unknown_command', msg)
+        handler = self.commands[cmd]
+        point = ddoc
+        for item in fun_path:
+            prev, point = point, point.get(item)
+            if point is None:
+                msg = 'Missed function `%s` in design doc `%s` by path: %s'
+                args = (item, ddoc_id, '/'.join(fun_path))
+                log.error(msg, *args)
+                raise Error('not_found', msg % args)
+        else:
+            func = point
+            if not isinstance(func, FunctionType):
+                func = server.compile(func, ddoc)
+                prev[item] = func
+        log.debug('Run %s in design doc `%s` by path: %s',
+                  func, ddoc_id, '/'.join(fun_path))
+        return handler(server, func, *fun_args)

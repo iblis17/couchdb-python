@@ -371,6 +371,35 @@ class SimpleQueryServer(BaseQueryServer):
             return self._process_request(['reset', config])
         return self._process_request(['reset'])
 
+    def ddoc_cmd(self, ddoc_id, cmd, func_path, func_args):
+        """Runs ``ddoc`` command.
+        Requires teached ddoc by :meth:`add_ddoc`.
+
+        :param ddoc_id: DDoc id.
+        :type ddoc_id: str
+
+        :param cmd: Command name.
+        :type cmd: str
+
+        :param func_path: List of keys which holds filter function within ddoc.
+        :type func_path: list
+
+        :param func_args: List of design function arguments.
+        :type func_args: list
+
+        :return: Returned value depended from executed command.
+
+        .. versionadded:: 0.11.0
+        """
+        if not func_path or func_path[0] != cmd:
+            func_path.insert(0, cmd)
+        return self._process_request(['ddoc', ddoc_id, func_path, func_args])
+
+    @property
+    def ddocs(self):
+        """Returns dict with registered ddocs"""
+        return self.commands['ddoc']
+
     @property
     def query_config(self):
         """Returns query server config which :meth:`reset` operates with"""
