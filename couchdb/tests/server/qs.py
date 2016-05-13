@@ -338,6 +338,13 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         reduced = server.reduce([red_fun], [])
         self.assertEqual(reduced, [True, [0]])
 
+    def test_rereduce(self):
+        def red_fun(keys, values, rereduce):
+            return sum(values)
+        server = self.server()
+        reduced = server.rereduce([red_fun], list(range(10)))
+        self.assertEqual(reduced, [True, [45]])
+
 
 def suite():
     suite = unittest.TestSuite()

@@ -6,7 +6,7 @@ import logging
 from couchdb import json
 from couchdb.server.exceptions import QueryServerException, Error
 
-__all__ = ('map_doc', 'reduce')
+__all__ = ('map_doc', 'reduce', 'rereduce')
 
 log = logging.getLogger(__name__)
 
@@ -110,3 +110,29 @@ def reduce(server, reduce_funs, kvs, rereduce=False):
                 log.error(msg)
                 raise Error('reduce_overflow_error', msg)
     return [True, reductions]
+
+
+def rereduce(server, reduce_funs, values):
+    """Rereduces mapping result
+
+    :command: rereduce
+
+    :param server: Query server instance.
+    :type server: :class:`~couchdb.server.BaseQueryServer`
+
+    :param reduce_funs: List of reduce functions source code.
+    :type reduce_funs: list
+
+    :param values: List values.
+    :type values: list
+
+    :return: Two element list with True and rereduction result.
+    :rtype: list
+
+    :raises:
+        - :exc:`~couchdb.server.exceptions.Error`
+          If any Python exception occurs or reduce output is twice longer
+          as state.line_length and reduce_limit is enabled in state.query_config
+    """
+    log.debug('Rereducing values:\n%s', values)
+    return reduce(server, reduce_funs, values, rereduce=True)

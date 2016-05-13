@@ -317,6 +317,7 @@ class SimpleQueryServer(BaseQueryServer):
 
         self.commands['map_doc'] = views.map_doc
         self.commands['reduce'] = views.reduce
+        self.commands['rereduce'] = views.rereduce
 
         elif self.version >= (0, 11, 0):
             ddoc_commands = {}
@@ -393,6 +394,23 @@ class SimpleQueryServer(BaseQueryServer):
         """
         funsrcs = [maybe_extract_source(fun) for fun in funs]
         return self._process_request(['reduce', funsrcs, keysvalues])
+
+    def rereduce(self, funs, values):
+        """Runs ``rereduce`` command.
+
+        :param funs: List of function objects or source strings.
+        :type funs: list
+
+        :param values: List of 2-element tuples with key and value.
+        :type: list
+
+        :return: Two-element list with True value and list of values per
+                 reduce function.
+
+        .. versionadded:: 0.8.0
+        """
+        funsrcs = [maybe_extract_source(fun) for fun in funs]
+        return self._process_request(['rereduce', funsrcs, values])
 
     def reset(self, config=None):
         """Runs ``reset`` command.

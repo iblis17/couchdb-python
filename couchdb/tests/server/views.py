@@ -210,6 +210,15 @@ class ReduceTestCase(unittest.TestCase):
         )
         self.assertEqual(res, [True, [0]])
 
+    def test_rereduce(self):
+        """should rereduce values"""
+        res = views.rereduce(
+            self.server,
+            ['def reducefun(keys, values): return sum(values)'],
+            [1, 2, 3, 4, 5]
+        )
+        self.assertEqual(res, [True, [15]])
+
 
 def suite():
     suite = unittest.TestSuite()
