@@ -349,6 +349,36 @@ def update(server, funsrc, doc, req):
     return run_update(server, server.compile(funsrc), doc, req)
 
 
+def ddoc_update(server, func, doc, req):
+    """Implementation of ddoc `updates` commands.
+
+    :command: updates
+
+    :param server: Query server instance.
+    :type server: :class:`~couchdb.server.BaseQueryServer`
+
+    :param func: Update function object.
+    :type func: function
+
+    :param doc: Document object.
+    :type doc: dict
+
+    :param req: Request info.
+    :type req: dict
+
+    :return: Three element list: ["up", doc, response]
+    :rtype: list
+
+    :raises:
+        - :exc:`~couchdb.server.exceptions.Error`
+          If request method was GET.
+          If response was not dict object or basestring.
+
+    .. versionadded:: 0.11.0
+    """
+    return run_update(server, func, doc, req)
+
+
 ################################################################################
 # Old render used only for 0.9.x
 #

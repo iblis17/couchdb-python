@@ -337,6 +337,7 @@ class SimpleQueryServer(BaseQueryServer):
             ddoc_commands = {}
             ddoc_commands['shows'] = render.ddoc_show
             ddoc_commands['lists'] = render.ddoc_list
+            ddoc_commands['updates'] = render.ddoc_update
 
         if self.version >= (1, 1, 0):
             self.commands['add_lib'] = state.add_lib
@@ -704,6 +705,30 @@ class SimpleQueryServer(BaseQueryServer):
 
         self._receive, self._respond = _input, _output
         return result
+
+    def ddoc_update(self, ddoc_id, func_path, doc=None, req=None):
+        """Runs ``ddoc`` ``updates`` command.
+        Requires teached ddoc by :meth:`add_ddoc`.
+
+        :param ddoc_id: DDoc id.
+        :type ddoc_id: str
+
+        :param func_path: List of keys which holds filter function within ddoc.
+        :type func_path: list
+
+        :param doc: Document object.
+        :type doc: dict
+
+        :param req: Request object.
+        :type req: dict
+
+        :return: Three-element list with ``up`` token, new document object
+                 and response object.
+
+        .. versionadded:: 0.11.0
+        """
+        args = [doc or {}, req or {}]
+        return self.ddoc_cmd(ddoc_id, 'updates', func_path, args)
 
     @property
     def ddocs(self):

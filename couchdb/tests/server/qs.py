@@ -533,6 +533,19 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         self.assertEqual(rows[2], ['chunks', ['baz']])
         self.assertEqual(tail, ['end', ['early']])
 
+    def test_ddoc_update(self):
+        def func(doc, req):
+            doc['world'] = 'hello'
+            return [doc, 'hello, doc']
+
+        server = self.server((0, 11, 0))
+        server.add_ddoc(wrap_func_to_ddoc('foo', ['updates', 'hello'], func))
+        result = server.ddoc_update('foo', ['hello'], {'_id': 'foo'})
+        self.assertEqual(
+            result,
+            ['up', {'_id': 'foo', 'world': 'hello'}, {'body': 'hello, doc'}]
+        )
+
 
 def suite():
     suite = unittest.TestSuite()
