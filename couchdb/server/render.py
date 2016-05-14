@@ -247,6 +247,28 @@ def list(server, head, req):
     return run_list(server, func, head, req)
 
 
+def ddoc_list(server, func, head, req):
+    """Implementation of ddoc `lists` command.
+
+    :command: lists
+
+    :param server: Query server instance.
+    :type server: :class:`~couchdb.server.BaseQueryServer`
+
+    :param func: List function object.
+    :type func: function
+
+    :param head: View result information.
+    :type head: dict
+
+    :param req: Request info.
+    :type req: dict
+
+    .. versionadded:: 0.11.0
+    """
+    return run_list(server, func, head, req)
+
+
 def show(server, func, doc, req):
     """Implementation of `show` command.
 

@@ -336,6 +336,7 @@ class SimpleQueryServer(BaseQueryServer):
         elif self.version >= (0, 11, 0):
             ddoc_commands = {}
             ddoc_commands['shows'] = render.ddoc_show
+            ddoc_commands['lists'] = render.ddoc_list
 
         if self.version >= (1, 1, 0):
             self.commands['add_lib'] = state.add_lib
@@ -663,6 +664,46 @@ class SimpleQueryServer(BaseQueryServer):
         """
         args = [doc or {}, req or {}]
         return self.ddoc_cmd(ddoc_id, 'shows', func_path, args)
+
+    def ddoc_list(self, ddoc_id, func_path, rows, head=None, req=None):
+        """Runs ``ddoc`` ``lists`` command.
+        Requires teached ddoc by :meth:`add_ddoc`.
+
+        :param ddoc_id: DDoc id.
+        :type ddoc_id: str
+
+        :param func_path: List of keys which holds filter function within ddoc.
+        :type func_path: list
+
+        :param rows: View result rows as list of dicts with `id`, `key`
+                     and `value` keys.
+        :type rows: list
+
+        :param req: Request object.
+        :type req: dict
+
+        :return: Two-element lists with token and data chunks.
+                 First element is for ``list_begin`` command with `start` token,
+                 last one is for ``list_tail`` command with `end` token
+                 and others for ``list_row`` commands with `chunk` token.
+
+        .. versionadded:: 0.11.0
+        """
+        args = [head or {}, req or {}]
+
+        result, input_rows = [], []
+        for row in rows:
+            input_rows.append(['list_row', row])
+        input_rows.append(['list_end'])
+        input_rows = iter(input_rows)
+
+        _input, _output = self._receive, self._respond
+        self._receive, self._respond = (lambda: input_rows), result.append
+
+        self.ddoc_cmd(ddoc_id, 'lists', func_path, args)
+
+        self._receive, self._respond = _input, _output
+        return result
 
     @property
     def ddocs(self):
