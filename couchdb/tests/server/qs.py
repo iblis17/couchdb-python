@@ -7,6 +7,7 @@ from functools import partial
 from couchdb import json
 from couchdb.server import BaseQueryServer, SimpleQueryServer
 from couchdb.server import exceptions
+from couchdb.server.helpers import wrap_func_to_ddoc
 from couchdb.util import StringIO
 
 
@@ -478,6 +479,36 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         server = self.server((0, 10, 0))
         result = server.validate_doc_update(func, {}, {'q': 42})
         self.assertEqual(result, 1)
+
+    def test_ddoc_show(self):
+        def func(doc, req):
+            def html():
+                return '<html><body>%s</body></html>' % doc['_id']
+
+            def xml():
+                return '<root><doc id="%s" /></root>' % doc['_id']
+
+            def foo():
+                return 'foo? bar! bar!'
+
+            register_type('foo', 'application/foo', 'application/x-foo')
+            provides('html', html)
+            provides('xml', xml)
+            provides('foo', foo)
+
+        server = self.server((0, 11, 0))
+        doc = {'_id': 'couch'}
+        req = {'headers': {'Accept': 'text/html,application/atom+xml; q=0.9'}}
+        server.add_ddoc(wrap_func_to_ddoc('foo', ['shows', 'provides'], func))
+        token, resp = server.ddoc_show('foo', ['provides'], doc, req)
+        self.assertEqual(token, 'resp')
+        self.assertEqual(
+            resp,
+            {
+                'headers': {'Content-Type': 'text/html; charset=utf-8'},
+                'body': '<html><body>couch</body></html>'
+            }
+        )
 
 
 def suite():

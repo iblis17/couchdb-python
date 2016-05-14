@@ -335,6 +335,7 @@ class SimpleQueryServer(BaseQueryServer):
 
         elif self.version >= (0, 11, 0):
             ddoc_commands = {}
+            ddoc_commands['shows'] = render.ddoc_show
 
         if self.version >= (1, 1, 0):
             self.commands['add_lib'] = state.add_lib
@@ -639,6 +640,29 @@ class SimpleQueryServer(BaseQueryServer):
         if not func_path or func_path[0] != cmd:
             func_path.insert(0, cmd)
         return self._process_request(['ddoc', ddoc_id, func_path, func_args])
+
+    def ddoc_show(self, ddoc_id, func_path, doc=None, req=None):
+        """Runs ``ddoc`` ``shows`` command.
+        Requires teached ddoc by :meth:`add_ddoc`.
+
+        :param ddoc_id: DDoc id.
+        :type ddoc_id: str
+
+        :param func_path: List of keys which holds filter function within ddoc.
+        :type func_path: list
+
+        :param doc: Document object.
+        :type doc: dict
+
+        :param req: Request object.
+        :type req: dict
+
+        :return: Two-element list with `resp` token and Response object.
+
+        .. versionadded:: 0.11.0
+        """
+        args = [doc or {}, req or {}]
+        return self.ddoc_cmd(ddoc_id, 'shows', func_path, args)
 
     @property
     def ddocs(self):

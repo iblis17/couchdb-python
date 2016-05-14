@@ -272,6 +272,28 @@ def show(server, func, doc, req):
     return run_show(server, server.compile(func), doc, req)
 
 
+def ddoc_show(server, func, doc, req):
+    """Implementation of ddoc `shows` command.
+
+    :command: shows
+
+    :param server: Query server instance.
+    :type server: :class:`~couchdb.server.BaseQueryServer`
+
+    :param func: Show function object.
+    :type func: function
+
+    :param doc: Document object.
+    :type doc: dict
+
+    :param req: Request info.
+    :type req: dict
+
+    .. versionadded:: 0.11.0
+    """
+    return run_show(server, func, doc, req)
+
+
 def update(server, funsrc, doc, req):
     """Implementation of `update` command.
 
