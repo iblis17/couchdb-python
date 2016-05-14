@@ -12,6 +12,67 @@ class MimeTestCase(unittest.TestCase):
         self.provider = mime.MimeProvider()
 
 
+class MimeToolsTestCase(MimeTestCase):
+
+    def test_best_match(self):
+        """should match mime"""
+        self.assertEqual(
+            mime.best_match(['application/json', 'text/x-json'],
+                            'application/json'),
+            "application/json"
+        )
+
+    def test_best_match_is_nothing(self):
+        """should return empty string if nothing matched"""
+        self.assertEqual(
+            mime.best_match(['application/json', 'text/x-json'], 'x-foo/bar'),
+            ''
+        )
+
+    def test_best_match_by_quality(self):
+        """should return match mime with best quality"""
+        self.assertEqual(
+            mime.best_match(['application/json', 'text/x-json'],
+                            'text/x-json;q=1'),
+            'text/x-json'
+        )
+
+    def test_best_match_by_wildcard(self):
+        """should match mimetype by wildcard"""
+        self.assertEqual(
+            mime.best_match(['application/json', 'text/x-json'],
+                            'application/*'),
+            'application/json'
+        )
+
+    def test_best_match_prefered_direct_match(self):
+        """should match by direct hit"""
+        self.assertEqual(
+            mime.best_match(['application/json', 'text/x-json'],
+                            '*/*,application/json,*'),
+            'application/json'
+        )
+
+    def test_best_match_supports_nothing(self):
+        """should return empty string if nothing could be matched"""
+        self.assertEqual(mime.best_match([], 'text/html'), '')
+
+    def test_register_type(self):
+        """should register multiple mimetypes for single keyword"""
+        self.provider.register_type('foo', 'x-foo/bar', 'x-foo/baz')
+        self.assertTrue('foo' in self.provider.mimes_by_key)
+        self.assertEqual(self.provider.mimes_by_key['foo'], ('x-foo/bar', 'x-foo/baz'))
+        self.assertTrue('x-foo/bar' in self.provider.keys_by_mime)
+        self.assertEqual(self.provider.keys_by_mime['x-foo/bar'], 'foo')
+        self.assertTrue('x-foo/baz' in self.provider.keys_by_mime)
+        self.assertEqual(self.provider.keys_by_mime['x-foo/baz'], 'foo')
+
+    def test_parse_malformed_mimetype(self):
+        """should not raise IndexError exception if MIME type is invalid"""
+        mime.parse_mimetype('text')
+        mime.parse_mimetype('')
+
+
 class ProvidesTestCase(MimeTestCase):
 
     def test_run_first_registered_for_unknown_mimetype(self):
@@ -108,6 +169,7 @@ class ProvidesTestCase(MimeTestCase):
 
 def suite():
     suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(MimeToolsTestCase, 'test'))
     suite.addTest(unittest.makeSuite(ProvidesTestCase, 'test'))
     return suite
 

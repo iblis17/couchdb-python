@@ -12,6 +12,68 @@ log = logging.getLogger(__name__)
 __all__ = ('best_match', 'MimeProvider', 'DEFAULT_TYPES')
 
 
+def parse_mimetype(mimetype):
+    parts = mimetype.split(';')
+    params = {}
+    for item in parts[1:]:
+        if '=' in item:
+            key, value = item.split('=', 1)
+        else:
+            key, value = item, None
+        params[key] = value
+    fulltype = parts[0].strip()
+    if fulltype == '*':
+        fulltype = '*/*'
+    if '/' in fulltype:
+        typeparts = fulltype.split('/', 1)
+    else:
+        typeparts = fulltype, None
+    return typeparts[0], typeparts[1], params
+
+
+def parse_media_range(range):
+    parsed_type = parse_mimetype(range)
+    q = float(parsed_type[2].get('q', '1'))
+    if q < 0 or q >= 1:
+        parsed_type[2]['q'] = '1'
+    return parsed_type
+
+
+def fitness_and_quality(mimetype, ranges):
+    parsed_ranges = [parse_media_range(item) for item in ranges.split(',')]
+    best_fitness = -1
+    best_fit_q = 0
+    base_type, base_subtype, base_params = parse_media_range(mimetype)
+    for parsed in parsed_ranges:
+        type, subtype, params = parsed
+        type_preq = type == base_type or '*' in [type, base_type]
+        subtype_preq = subtype == base_subtype or '*' in [subtype, base_subtype]
+        if type_preq and subtype_preq:
+            match_count = sum(
+                1 for k, v in base_params.items()
+                if k != 'q' and params.get(k) == v)
+            fitness = type == base_type and 100 or 0
+            fitness += subtype == base_subtype and 10 or 0
+            fitness += match_count
+            if fitness > best_fitness:
+                best_fitness = fitness
+                best_fit_q = params.get('q', 0)
+    return best_fitness, float(best_fit_q)
+
+
+def quality(mimetype, ranges):
+    return fitness_and_quality(mimetype, ranges)
+
+
+def best_match(supported, header):
+    weighted = []
+    for i, item in enumerate(supported):
+        weighted.append([fitness_and_quality(item, header), i, item])
+    weighted.sort()
+    log.debug('Best match rating, last wins:\n%s', pformat(weighted))
+    return weighted and weighted[-1][0][1] and weighted[-1][2] or ''
+
+
 # Some default types.
 # Build list of `MIME types
 # <http://www.iana.org/assignments/media-types/>`_ for HTTP responses.
