@@ -490,10 +490,82 @@ class ListTestCase(unittest.TestCase):
             self.fail('should raise render error')
 
 
+class UpdateTestCase(unittest.TestCase):
+
+    def setUp(self):
+        def func(doc, req):
+            if not doc:
+                if 'id' in req:
+                    return [{'_id': req['id']}, 'new doc']
+                return [None, 'empty doc']
+            doc['world'] = 'hello'
+            return [doc, 'hello doc']
+
+        self.server = MockQueryServer()
+        self.func = func
+
+    def test_new_doc(self):
+        doc, req = {}, {'id': 'foo'}
+        up, doc, resp = render.run_update(self.server, self.func, doc, req)
+        self.assertEqual(up, 'up')
+        self.assertEqual(doc, {'_id': 'foo'})
+        self.assertEqual(resp, {'body': 'new doc'})
+
+    def test_empty_doc(self):
+        up, doc, resp = render.run_update(self.server, self.func, {}, {})
+        self.assertEqual(up, 'up')
+        self.assertEqual(doc, None)
+        self.assertEqual(resp, {'body': 'empty doc'})
+
+    def test_update_doc(self):
+        doc, req = {'_id': 'foo'}, {}
+        up, doc, resp = render.run_update(self.server, self.func, doc, req)
+        self.assertEqual(up, 'up')
+        self.assertEqual(doc, {'_id': 'foo', 'world': 'hello'})
+        self.assertEqual(resp, {'body': 'hello doc'})
+
+    def test_method_get_not_allowed(self):
+        try:
+            render.run_update(self.server, self.func, {}, {'method': 'GET'})
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.Error))
+            self.assertEqual(err.args[0], 'method_not_allowed')
+        else:
+            self.fail('update method GET not allowed by default')
+
+    def test_method_get_allowed_via_config(self):
+        self.server.config['allow_get_update'] = True
+        render.run_update(self.server, self.func, {}, {'method': 'GET'})
+
+    def test_invalid_response_type(self):
+        def func(doc, req):
+            return [None, object()]
+        try:
+            token, resp = render.run_update(self.server, func, {}, {})
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.Error))
+            self.assertEqual(err.args[0], 'render_error')
+        else:
+            self.fail('Update function should return doc and response object'
+                      ' as string or dict')
+
+    def test_python_exception(self):
+        def func(head, req):
+            1/0
+        try:
+            render.run_update(self.server, func, {}, {})
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.Error))
+            self.assertEqual(err.args[0], 'render_error')
+        else:
+            self.fail('should raise render error')
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(ShowTestCase, 'test'))
     suite.addTest(unittest.makeSuite(ListTestCase, 'test'))
+    suite.addTest(unittest.makeSuite(UpdateTestCase, 'test'))
     return suite
 
 

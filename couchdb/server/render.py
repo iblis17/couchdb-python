@@ -167,6 +167,32 @@ def run_show(server, func, doc, req):
         return ['resp', resp]
 
 
+def run_update(server, func, doc, req):
+    log.debug('Run update %s\ndoc: %s\nreq: %s', func, doc, req)
+    method = req.get('method', None)
+    if not server.config.get('allow_get_update', False) and method == 'GET':
+        msg = 'Method `GET` is not allowed for update functions'
+        log.error(msg + '.\nRequest: %s', req)
+        raise Error('method_not_allowed', msg)
+    try:
+        doc, resp = func(doc, req)
+    except QueryServerException:
+        raise
+    except Exception as err:
+        log.exception('Update %s raised an error:\n'
+                      'doc: %s\nreq: %s\n', func, doc, req)
+        raise Error('render_error', str(err))
+    else:
+        resp = maybe_wrap_response(resp)
+        log.debug('Update %s response\n%s', func, resp)
+        if isinstance(resp, (dict,) + util.strbase):
+            return ['up', doc, resp]
+        else:
+            msg = 'Invalid response object %r ; type: %r' % (resp, type(resp))
+            log.error(msg)
+            raise Error('render_error', msg)
+
+
 def run_list(server, func, head, req):
     log.debug('Run list %s\nhead: %s\nreq: %s', func, head, req)
     mime_provider = mime.MimeProvider()
@@ -244,6 +270,39 @@ def show(server, func, doc, req):
         Use :func:`~couchdb.server.render.ddoc_show` instead.
     """
     return run_show(server, server.compile(func), doc, req)
+
+
+def update(server, funsrc, doc, req):
+    """Implementation of `update` command.
+
+    :command: update
+
+    :param server: Query server instance.
+    :type server: :class:`~couchdb.server.BaseQueryServer`
+
+    :param funsrc: Update function source.
+    :type funsrc: unicode
+
+    :param doc: Document object.
+    :type doc: dict
+
+    :param req: Request info.
+    :type req: dict
+
+    :return: Three element list: ["up", doc, response]
+    :rtype: list
+
+    :raises:
+        - :exc:`~couchdb.server.exceptions.Error`
+          If request method was GET.
+          If response was not dict object or basestring.
+
+    .. versionadded:: 0.10.0
+    .. deprecated:: 0.11.0
+        Now is a subcommand of :ref:`ddoc`.
+        Use :func:`~couchdb.server.render.ddoc_update` instead.
+    """
+    return run_update(server, server.compile(funsrc), doc, req)
 
 
 ################################################################################

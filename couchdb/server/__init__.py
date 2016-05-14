@@ -328,6 +328,7 @@ class SimpleQueryServer(BaseQueryServer):
         elif (0, 10, 0) <= self.version < (0, 11, 0):
             self.commands['show'] = render.show
             self.commands['list'] = render.list
+            self.commands['update'] = render.update
 
         elif self.version >= (0, 11, 0):
             ddoc_commands = {}
@@ -544,6 +545,27 @@ class SimpleQueryServer(BaseQueryServer):
 
         self._receive, self._respond = _input, _output
         return result
+
+    def update(self, fun, doc=None, req=None):
+        """Runs ``update`` command.
+
+        :param fun: Function object or source string.
+        :type fun: function or str
+
+        :param doc: Document object.
+        :type doc: dict
+
+        :param req: Request object.
+        :type req: dict
+
+        :return: Three-element list with ``up`` token, new document object
+                 and response object.
+
+        .. versionadded:: 0.10.0
+        .. deprecated:: 0.11.0 Use :meth:`ddoc_update` instead.
+        """
+        funstr = maybe_extract_source(fun)
+        return self._process_request(['update', funstr, doc or {}, req or {}])
 
     def ddoc_cmd(self, ddoc_id, cmd, func_path, func_args):
         """Runs ``ddoc`` command.

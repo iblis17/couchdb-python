@@ -452,6 +452,18 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         self.assertEqual(rows[2], ['chunks', ['baz']])
         self.assertEqual(tail, ['end', ['early']])
 
+    def test_update(self):
+        def func(doc, req):
+            doc['world'] = 'hello'
+            return [doc, 'hello, doc']
+
+        server = self.server((0, 10, 0))
+        result = server.update(func, {'_id': 'foo'})
+        self.assertEqual(
+            result,
+            ['up', {'_id': 'foo', 'world': 'hello'}, {'body': 'hello, doc'}]
+        )
+
 
 def suite():
     suite = unittest.TestSuite()
