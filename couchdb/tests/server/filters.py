@@ -56,6 +56,20 @@ class FiltersTestCase(unittest.TestCase):
         )
         self.assertEqual(res, [True, [True, False]])
 
+    def test_view_filter(self):
+        """should use map function as filter"""
+
+        def mapfun(doc):
+            if doc['good']:
+                yield None, doc
+
+        res = filters.ddoc_views(
+            self.server,
+            mapfun,
+            [{'foo': 'bar', 'good': True}, {'bar': 'baz', 'good': False}],
+        )
+        self.assertEqual(res, [True, [True, False]])
+
 
 def suite():
     suite = unittest.TestSuite()

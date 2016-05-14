@@ -554,6 +554,15 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         result = server.ddoc_filter('foo', ['gt_5'], [{'q': 15}, {'q': -1}])
         self.assertEqual(result, [True, [True, False]])
 
+    def test_ddoc_filter_view(self):
+        def map_func(doc):
+            if doc['q'] > 5:
+                yield doc['q'], 1
+        server = self.server((1, 1, 0))
+        server.add_ddoc(wrap_func_to_ddoc('foo', ['views', 'gt5'], map_func))
+        result = server.ddoc_filter_view('foo', ['gt5'], [[{'q': 7}, {'q': 1}]])
+        self.assertEqual(result, [True, [True, False]])
+
 
 def suite():
     suite = unittest.TestSuite()

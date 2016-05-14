@@ -342,6 +342,7 @@ class SimpleQueryServer(BaseQueryServer):
 
         if self.version >= (1, 1, 0):
             self.commands['add_lib'] = state.add_lib
+            ddoc_commands['views'] = filters.ddoc_views
 
         if self.version >= (0, 11, 0):
             self.commands['ddoc'] = ddoc.DDoc(ddoc_commands)
@@ -757,6 +758,24 @@ class SimpleQueryServer(BaseQueryServer):
         """
         args = [docs, req or {}, userctx or {}]
         return self.ddoc_cmd(ddoc_id, 'filters', func_path, args)
+
+    def ddoc_filter_view(self, ddoc_id, func_path, docs):
+        """Runs ``ddoc`` ``views`` command.
+        Requires teached ddoc by :meth:`add_ddoc`.
+
+        :param ddoc_id: DDoc id.
+        :type ddoc_id: str
+
+        :param func_path: List of keys which holds filter function within ddoc.
+        :type func_path: list
+
+        :param docs: List of document objects.
+        :type docs: list
+
+        :return: Two-element list with True and boolean value for each document
+                 which sign was document passed filter or not.
+        """
+        return self.ddoc_cmd(ddoc_id, 'views', func_path, docs)
 
     @property
     def ddocs(self):

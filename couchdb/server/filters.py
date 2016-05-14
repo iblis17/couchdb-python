@@ -2,13 +2,24 @@
 #
 import logging
 
-__all__ = ('filter', 'ddoc_filter')
+__all__ = ('filter', 'ddoc_filter', 'ddoc_views')
 
 log = logging.getLogger(__name__)
 
 
 def run_filter(func, docs, *args):
     return [True, [bool(func(doc, *args)) for doc in docs]]
+
+
+def run_filter_view(func, docs):
+    result = []
+    for doc in docs:
+        for item in func(doc):
+            result.append(True)
+            break
+        else:
+            result.append(False)
+    return [True, result]
 
 
 def filter(server, docs, req, userctx=None):
@@ -76,3 +87,30 @@ def ddoc_filter(server, func, docs, req, userctx=None):
     else:
         args = req,
     return run_filter(func, docs, *args)
+
+
+def ddoc_views(server, func, docs):
+    """Implementation of ddoc `views` command. Filters ``_changes`` feed using
+    view map function.
+
+    :command: views
+
+    :param server: Query server instance.
+    :type server: :class:`~couchdb.server.BaseQueryServer`
+
+    :param func: Map function object.
+    :type func: function
+
+    :param docs: List of documents.
+    :type docs: list
+
+    :return: Two element list of True and list of booleans which marks is
+        view generated result for passed document or not.
+
+    Example would be same as view map function, just make call::
+
+        GET /db/_changes?filter=_view&view=design_name/view_name
+
+    .. versionadded:: 1.1.0
+    """
+    return run_filter_view(func, docs)
