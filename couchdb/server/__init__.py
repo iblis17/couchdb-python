@@ -328,6 +328,7 @@ class SimpleQueryServer(BaseQueryServer):
         elif (0, 10, 0) <= self.version < (0, 11, 0):
             self.commands['show'] = render.show
             self.commands['list'] = render.list
+            self.commands['filter'] = filters.filter
             self.commands['update'] = render.update
 
         elif self.version >= (0, 11, 0):
@@ -566,6 +567,28 @@ class SimpleQueryServer(BaseQueryServer):
         """
         funstr = maybe_extract_source(fun)
         return self._process_request(['update', funstr, doc or {}, req or {}])
+
+    def filter(self, fun, docs, req=None):
+        """Runs ``filter`` command.
+        Implicitly resets and adds passed function to query server state.
+
+        :param fun: Function object or source string.
+        :type fun: function or str
+
+        :param docs: List of document objects.
+        :type docs: list
+
+        :param req: Request object.
+        :type req: dict
+
+        :return: List of chunks.
+
+        .. versionadded:: 0.10.0
+        .. deprecated:: 0.11.0 Use :meth:`ddoc_filter` instead.
+        """
+        self.reset()
+        self.add_fun(fun)
+        return self._process_request(['filter', docs, req or {}])
 
     def ddoc_cmd(self, ddoc_id, cmd, func_path, func_args):
         """Runs ``ddoc`` command.

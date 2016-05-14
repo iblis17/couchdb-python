@@ -464,6 +464,13 @@ class SimpleQueryServerTestCase(unittest.TestCase):
             ['up', {'_id': 'foo', 'world': 'hello'}, {'body': 'hello, doc'}]
         )
 
+    def test_filter(self):
+        def func(doc, req, userctx):
+            return doc['q'] > 5
+        server = self.server((0, 10, 0))
+        result = server.filter(func, [{'q': 15}, {'q': 1}, {'q': 6}, {'q': 0}])
+        self.assertEqual(result, [True, [True, False, True, False]])
+
 
 def suite():
     suite = unittest.TestSuite()
