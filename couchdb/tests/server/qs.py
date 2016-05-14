@@ -563,6 +563,14 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         result = server.ddoc_filter_view('foo', ['gt5'], [[{'q': 7}, {'q': 1}]])
         self.assertEqual(result, [True, [True, False]])
 
+    def test_ddoc_validate_doc_update(self):
+        def func(olddoc, newdoc, userctx):
+            assert newdoc['q'] > 5
+        server = self.server((0, 11, 0))
+        server.add_ddoc(wrap_func_to_ddoc('foo', ['validate_doc_update'], func))
+        result = server.ddoc_validate_doc_update('foo', {}, {'q': 42})
+        self.assertEqual(result, 1)
+
 
 def suite():
     suite = unittest.TestSuite()

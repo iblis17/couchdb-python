@@ -339,6 +339,7 @@ class SimpleQueryServer(BaseQueryServer):
             ddoc_commands['lists'] = render.ddoc_list
             ddoc_commands['filters'] = filters.ddoc_filter
             ddoc_commands['updates'] = render.ddoc_update
+            ddoc_commands['validate_doc_update'] = validate.ddoc_validate
 
         if self.version >= (1, 1, 0):
             self.commands['add_lib'] = state.add_lib
@@ -776,6 +777,30 @@ class SimpleQueryServer(BaseQueryServer):
                  which sign was document passed filter or not.
         """
         return self.ddoc_cmd(ddoc_id, 'views', func_path, docs)
+
+    def ddoc_validate_doc_update(self, ddoc_id, olddoc=None,
+                                 newdoc=None, userctx=None, secobj=None):
+        """Runs ``ddoc`` ``validate_doc_update`` command.
+        Requires teached ddoc by :meth:`add_ddoc`.
+
+        :param ddoc_id: DDoc id.
+        :type ddoc_id: str
+
+        :param olddoc: Document object.
+        :type olddoc: dict
+
+        :param newdoc: Document object.
+        :type newdoc: dict
+
+        :param userctx: User context object.
+        :type userctx: dict
+
+        :return: 1
+
+        .. versionadded:: 0.11.0
+        """
+        args = [olddoc or {}, newdoc or {}, userctx or {}, secobj or {}]
+        return self.ddoc_cmd(ddoc_id, 'validate_doc_update', [], args)
 
     @property
     def ddocs(self):
