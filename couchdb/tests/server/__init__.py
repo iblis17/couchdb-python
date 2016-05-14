@@ -2,9 +2,12 @@
 #
 import unittest
 
+from couchdb.tests.server import stream
+
 
 def suite():
     suite = unittest.TestSuite()
+    suite.addTest(stream.suite())
     return suite
 
 
