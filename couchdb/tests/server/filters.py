@@ -26,6 +26,36 @@ class FiltersTestCase(unittest.TestCase):
         )
         self.assertEqual(res, [True, [True, False]])
 
+    def test_ddoc_filter(self):
+        """should filter documents using ddoc filter function for 0.11.0+"""
+        server = MockQueryServer((0, 11, 0))
+
+        def filterfun(doc, req, userctx):
+            return doc["good"]
+
+        res = filters.ddoc_filter(
+            server,
+            filterfun,
+            [{'foo': 'bar', 'good': True}, {'bar': 'baz', 'good': False}],
+            {}, {}
+        )
+        self.assertEqual(res, [True, [True, False]])
+
+    def test_new_ddoc_filter(self):
+        """shouldn't pass userctx argument to filter function since 0.11.1"""
+        server = MockQueryServer((0, 11, 1))
+
+        def filterfun(doc, req):
+            return doc["good"]
+
+        res = filters.ddoc_filter(
+            server,
+            filterfun,
+            [{'foo': 'bar', 'good': True}, {'bar': 'baz', 'good': False}],
+            {}
+        )
+        self.assertEqual(res, [True, [True, False]])
+
 
 def suite():
     suite = unittest.TestSuite()

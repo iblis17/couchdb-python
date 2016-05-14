@@ -546,6 +546,14 @@ class SimpleQueryServerTestCase(unittest.TestCase):
             ['up', {'_id': 'foo', 'world': 'hello'}, {'body': 'hello, doc'}]
         )
 
+    def test_ddoc_filter(self):
+        def func(doc, req, userctx):
+            return doc['q'] > 5
+        server = self.server((0, 11, 0))
+        server.add_ddoc(wrap_func_to_ddoc('foo', ['filters', 'gt_5'], func))
+        result = server.ddoc_filter('foo', ['gt_5'], [{'q': 15}, {'q': -1}])
+        self.assertEqual(result, [True, [True, False]])
+
 
 def suite():
     suite = unittest.TestSuite()

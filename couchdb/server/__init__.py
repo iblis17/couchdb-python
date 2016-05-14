@@ -337,6 +337,7 @@ class SimpleQueryServer(BaseQueryServer):
             ddoc_commands = {}
             ddoc_commands['shows'] = render.ddoc_show
             ddoc_commands['lists'] = render.ddoc_list
+            ddoc_commands['filters'] = filters.ddoc_filter
             ddoc_commands['updates'] = render.ddoc_update
 
         if self.version >= (1, 1, 0):
@@ -729,6 +730,33 @@ class SimpleQueryServer(BaseQueryServer):
         """
         args = [doc or {}, req or {}]
         return self.ddoc_cmd(ddoc_id, 'updates', func_path, args)
+
+    def ddoc_filter(self, ddoc_id, func_path, docs, req=None, userctx=None):
+        """Runs ``ddoc`` ``filters`` command.
+        Requires teached ddoc by :meth:`add_ddoc`.
+
+        :param ddoc_id: DDoc id.
+        :type ddoc_id: str
+
+        :param func_path: List of keys which holds filter function within ddoc.
+        :type func_path: list
+
+        :param docs: List of document objects.
+        :type docs: list
+
+        :param req: Request object.
+        :type req: dict
+
+        :param userctx: User context object.
+        :type userctx: dict
+
+        :return: Two-element list with True and boolean value for each document
+                 which sign was document passed filter or not.
+
+        .. versionadded:: 0.11.0
+        """
+        args = [docs, req or {}, userctx or {}]
+        return self.ddoc_cmd(ddoc_id, 'filters', func_path, args)
 
     @property
     def ddocs(self):
