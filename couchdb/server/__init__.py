@@ -324,12 +324,14 @@ class SimpleQueryServer(BaseQueryServer):
             self.commands['list_begin'] = render.list_begin
             self.commands['list_row'] = render.list_row
             self.commands['list_tail'] = render.list_tail
+            self.commands['validate'] = validate.validate
 
         elif (0, 10, 0) <= self.version < (0, 11, 0):
             self.commands['show'] = render.show
             self.commands['list'] = render.list
             self.commands['filter'] = filters.filter
             self.commands['update'] = render.update
+            self.commands['validate'] = validate.validate
 
         elif self.version >= (0, 11, 0):
             ddoc_commands = {}
@@ -589,6 +591,30 @@ class SimpleQueryServer(BaseQueryServer):
         self.reset()
         self.add_fun(fun)
         return self._process_request(['filter', docs, req or {}])
+
+    def validate_doc_update(self, fun, olddoc=None, newdoc=None, userctx=None):
+        """Runs ``validate`` command.
+
+        :param fun: Function object or source string.
+        :type fun: function or str
+
+        :param olddoc: Document object.
+        :type olddoc: dict
+
+        :param newdoc: Document object.
+        :type newdoc: dict
+
+        :param userctx: User context object.
+        :type userctx: dict
+
+        :return: 1
+
+        .. versionadded:: 0.10.0
+        .. deprecated:: 0.11.0 Use :meth:`ddoc_validate_doc_update` instead.
+        """
+        funsrc = maybe_extract_source(fun)
+        args = [olddoc or {}, newdoc or {}, userctx or {}]
+        return self._process_request(['validate', funsrc] + args)
 
     def ddoc_cmd(self, ddoc_id, cmd, func_path, func_args):
         """Runs ``ddoc`` command.

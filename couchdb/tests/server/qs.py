@@ -471,6 +471,14 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         result = server.filter(func, [{'q': 15}, {'q': 1}, {'q': 6}, {'q': 0}])
         self.assertEqual(result, [True, [True, False, True, False]])
 
+    def test_validate_doc_update(self):
+        def func(olddoc, newdoc, userctx):
+            assert newdoc['q'] > 5
+
+        server = self.server((0, 10, 0))
+        result = server.validate_doc_update(func, {}, {'q': 42})
+        self.assertEqual(result, 1)
+
 
 def suite():
     suite = unittest.TestSuite()
