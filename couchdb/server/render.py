@@ -16,6 +16,79 @@ __all__ = ('show', 'list', 'update',
 log = logging.getLogger(__name__)
 
 
+class ChunkedResponder(object):
+
+    def __init__(self, input, output, mime_provider):
+        self.gotrow = False
+        self.lastrow = False
+        self.startresp = {}
+        self.chunks = []
+        self.read = input
+        self.write = output
+        self.mime_provider = mime_provider
+
+    def reset(self):
+        self.gotrow = False
+        self.lastrow = False
+        self.startresp = {}
+        self.chunks = []
+
+    def get_row(self):
+        """Yields a next row of view result."""
+        reader = self.read()
+        while True:
+            if self.lastrow:
+                break
+            if not self.gotrow:
+                self.gotrow = True
+                self.send_start(self.mime_provider.resp_content_type)
+            else:
+                self.blow_chunks()
+            try:
+                data = next(reader)
+            except StopIteration:
+                break
+            if data[0] == 'list_end':
+                self.lastrow = True
+                break
+            if data[0] != 'list_row':
+                log.error('Not a row `%s`' % data[0])
+                raise FatalError('list_error', 'not a row `%s`' % data[0])
+            yield data[1]
+
+    def start(self, resp=None):
+        """Initiate HTTP response.
+
+        :param resp: Initial response. Optional.
+        :type resp: dict
+        """
+        self.startresp = resp or {}
+        self.chunks = []
+
+    def send_start(self, resp_content_type):
+        log.debug('Start response with %s content type', resp_content_type)
+        resp = apply_content_type(self.startresp or {}, resp_content_type)
+        self.write(['start', self.chunks, resp])
+        self.chunks = []
+        self.startresp = {}
+
+    def send(self, chunk):
+        """Sends an HTTP chunk to the client.
+
+        :param chunk: Response chunk object.
+                      Would be converted to unicode string.
+        :type chunk: unicode or utf-8 encoded string preferred.
+        """
+        if not isinstance(chunk, util.utype):
+            chunk = util.utype(chunk, 'utf-8')
+        self.chunks.append(chunk)
+
+    def blow_chunks(self, label='chunks'):
+        log.debug('Send chunks')
+        self.write([label, self.chunks])
+        self.chunks = []
+
+
 def apply_context(func, **context):
     globals_ = func.__globals__.copy()
     globals_.update(context)
@@ -23,11 +96,100 @@ def apply_context(func, **context):
     return func
 
 
+def apply_content_type(resp, resp_content_type):
+    if not resp.get('headers'):
+        resp['headers'] = {}
+    if resp_content_type and not resp['headers'].get('Content-Type'):
+        resp['headers']['Content-Type'] = resp_content_type
+    return resp
+
+
 def maybe_wrap_response(resp):
     if isinstance(resp, util.strbase):
         return {'body': resp}
     else:
         return resp
+
+
+def is_doc_request_path(info):
+    return len(info['path']) > 5
+
+
+def run_show(server, func, doc, req):
+    log.debug('Run show %s\ndoc: %s\nreq: %s', func, doc, req)
+    mime_provider = mime.MimeProvider()
+    responder = ChunkedResponder(server.receive, server.respond, mime_provider)
+    func = apply_context(
+        func,
+        register_type=mime_provider.register_type,
+        provides=mime_provider.provides,
+        start=responder.start,
+        send=responder.send
+    )
+    try:
+        resp = func(doc, req) or {}
+        if responder.chunks:
+            resp = maybe_wrap_response(resp)
+            if 'headers' not in resp:
+                resp['headers'] = {}
+            for key, value in responder.startresp.items():
+                assert isinstance(key, str), 'invalid header key %r' % key
+                assert isinstance(value, str), 'invalid header value %r' % value
+                resp['headers'][key] = value
+            resp['body'] = ''.join(responder.chunks) + resp.get('body', '')
+            responder.reset()
+        if mime_provider.is_provides_used():
+            provided_resp = mime_provider.run_provides(req) or {}
+            provided_resp = maybe_wrap_response(provided_resp)
+            body = provided_resp.get('body', '')
+            if responder.chunks:
+                body = resp.get('body', '') + ''.join(responder.chunks)
+                body += provided_resp.get('body', '')
+            resp.update(provided_resp)
+            if 'body' in resp:
+                resp['body'] = body
+            resp = apply_content_type(resp, mime_provider.resp_content_type)
+    except QueryServerException:
+        raise
+    except Exception as err:
+        log.exception('Show %s raised an error:\n'
+                      'doc: %s\nreq: %s\n', func, doc, req)
+        if doc is None and is_doc_request_path(req):
+            raise Error('not_found', 'document not found')
+        raise Error('render_error', str(err))
+    else:
+        resp = maybe_wrap_response(resp)
+        log.debug('Show %s response\n%s', func, resp)
+        if not isinstance(resp, (dict,) + util.strbase):
+            msg = 'Invalid response object %r ; type: %r' % (resp, type(resp))
+            log.error(msg)
+            raise Error('render_error', msg)
+        return ['resp', resp]
+
+
+def show(server, func, doc, req):
+    """Implementation of `show` command.
+
+    :command: show
+
+    :param server: Query server instance.
+    :type server: :class:`~couchdb.server.BaseQueryServer`
+
+    :param func: Show function source.
+    :type func: unicode
+
+    :param doc: Document object.
+    :type doc: dict
+
+    :param req: Request info.
+    :type req: dict
+
+    .. versionadded:: 0.10.0
+    .. deprecated:: 0.11.0
+        Now is a subcommand of :ref:`ddoc`.
+        Use :func:`~couchdb.server.render.ddoc_show` instead.
+    """
+    return run_show(server, server.compile(func), doc, req)
 
 
 ################################################################################

@@ -325,6 +325,9 @@ class SimpleQueryServer(BaseQueryServer):
             self.commands['list_row'] = render.list_row
             self.commands['list_tail'] = render.list_tail
 
+        elif (0, 10, 0) <= self.version < (0, 11, 0):
+            self.commands['show'] = render.show
+
         elif self.version >= (0, 11, 0):
             ddoc_commands = {}
 
@@ -481,6 +484,26 @@ class SimpleQueryServer(BaseQueryServer):
         for row in rows:
             yield self._process_request(['list_row', row, req])
         yield self._process_request(['list_tail', req])
+
+    def show(self, fun, doc=None, req=None):
+        """Runs ``show`` command.
+
+        :param fun: Function object or source string.
+        :type fun: function or str
+
+        :param doc: Document object.
+        :type doc: dict
+
+        :param req: Request object.
+        :type req: dict
+
+        :return: Two-element list with `resp` token and Response object.
+
+        .. versionadded:: 0.10.0
+        .. deprecated:: 0.11.0 Use :meth:`ddoc_show` instead.
+        """
+        funsrc = maybe_extract_source(fun)
+        return self._process_request(['show', funsrc, doc or {}, req or {}])
 
     def ddoc_cmd(self, ddoc_id, cmd, func_path, func_args):
         """Runs ``ddoc`` command.

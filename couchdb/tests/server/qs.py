@@ -401,6 +401,35 @@ class SimpleQueryServerTestCase(unittest.TestCase):
         self.assertEqual(rows[2], {'body': 'bam'})
         self.assertEqual(tail, {'body': 'tail'})
 
+    def test_show(self):
+        def func(doc, req):
+            def html():
+                return '<html><body>%s</body></html>' % doc['_id']
+
+            def xml():
+                return '<root><doc id="%s" /></root>' % doc['_id']
+
+            def foo():
+                return 'foo? bar! bar!'
+
+            register_type('foo', 'application/foo', 'application/x-foo')
+            provides('html', html)
+            provides('xml', xml)
+            provides('foo', foo)
+
+        server = self.server((0, 10, 0))
+        doc = {'_id': 'couch'}
+        req = {'headers': {'Accept': 'text/html,application/atom+xml; q=0.9'}}
+        token, resp = server.show(func, doc, req)
+        self.assertEqual(token, 'resp')
+        self.assertEqual(
+            resp,
+            {
+                'headers': {'Content-Type': 'text/html; charset=utf-8'},
+                'body': '<html><body>couch</body></html>'
+            }
+        )
+
 
 def suite():
     suite = unittest.TestSuite()
