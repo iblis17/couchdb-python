@@ -430,6 +430,28 @@ class SimpleQueryServerTestCase(unittest.TestCase):
             }
         )
 
+    def test_list(self):
+        def func(head, req):
+            send('first chunk')
+            send(req['q'])
+            for row in get_row():
+                send(row['key'])
+            return 'early'
+        server = self.server((0, 10, 0))
+        rows = [
+            {'key': 'foo'},
+            {'key': 'bar'},
+            {'key': 'baz'},
+        ]
+        result = server.list(func, rows, {'foo': 'bar'}, {'q': 'ok'})
+        head, rows, tail = result[0], result[1:-1], result[-1]
+
+        self.assertEqual(head, ['start', ['first chunk', 'ok'], {'headers': {}}])
+        self.assertEqual(rows[0], ['chunks', ['foo']])
+        self.assertEqual(rows[1], ['chunks', ['bar']])
+        self.assertEqual(rows[2], ['chunks', ['baz']])
+        self.assertEqual(tail, ['end', ['early']])
+
 
 def suite():
     suite = unittest.TestSuite()

@@ -167,6 +167,60 @@ def run_show(server, func, doc, req):
         return ['resp', resp]
 
 
+def run_list(server, func, head, req):
+    log.debug('Run list %s\nhead: %s\nreq: %s', func, head, req)
+    mime_provider = mime.MimeProvider()
+    responder = ChunkedResponder(server.receive, server.respond, mime_provider)
+    func = apply_context(
+        func,
+        register_type=mime_provider.register_type,
+        provides=mime_provider.provides,
+        start=responder.start,
+        send=responder.send,
+        get_row=responder.get_row
+    )
+    try:
+        tail = func(head, req)
+        if mime_provider.is_provides_used():
+            tail = mime_provider.run_provides(req)
+        if not responder.gotrow:
+            for row in responder.get_row():
+                break
+        if tail is not None:
+            responder.send(tail)
+        responder.blow_chunks('end')
+    except QueryServerException:
+        raise
+    except Exception as err:
+        log.exception('List %s raised an error:\n'
+                      'head: %s\nreq: %s\n', func, head, req)
+        raise Error('render_error', str(err))
+
+
+def list(server, head, req):
+    """Implementation of `list` command. Should be prequested by ``add_fun``
+    command.
+
+    :command: list
+
+    :param server: Query server instance.
+    :type server: :class:`~couchdb.server.BaseQueryServer`
+
+    :param head: View result information.
+    :type head: dict
+
+    :param req: Request info.
+    :type req: dict
+
+    .. versionadded:: 0.10.0
+    .. deprecated:: 0.11.0
+        Now is a subcommand of :ref:`ddoc`.
+        Use :func:`~couchdb.server.render.ddoc_list` instead.
+    """
+    func = server.state['functions'][0]
+    return run_list(server, func, head, req)
+
+
 def show(server, func, doc, req):
     """Implementation of `show` command.
 

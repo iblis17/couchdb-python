@@ -327,6 +327,7 @@ class SimpleQueryServer(BaseQueryServer):
 
         elif (0, 10, 0) <= self.version < (0, 11, 0):
             self.commands['show'] = render.show
+            self.commands['list'] = render.list
 
         elif self.version >= (0, 11, 0):
             ddoc_commands = {}
@@ -504,6 +505,45 @@ class SimpleQueryServer(BaseQueryServer):
         """
         funsrc = maybe_extract_source(fun)
         return self._process_request(['show', funsrc, doc or {}, req or {}])
+
+    def list(self, fun, rows, head=None, req=None):
+        """Runs ``list`` command.
+        Implicitly resets and adds passed function to query server state.
+
+        :param fun: Function object or source string.
+        :type fun: function or str
+
+        :param rows: View result rows as list of dicts with `id`, `key`
+                     and `value` keys.
+        :type rows: list
+
+        :param req: Request object.
+        :type req: dict
+
+        :return: Two-element lists with token and data chunks.
+                 First element is for ``list_begin`` command with `start` token,
+                 last one is for ``list_tail`` command with `end` token
+                 and others for ``list_row`` commands with `chunk` token.
+
+        .. versionadded:: 0.10.0
+        .. deprecated:: 0.11.0 Use :meth:`ddoc_list` instead.
+        """
+        self.reset()
+        self.add_fun(fun)
+
+        result, input_rows = [], []
+        for row in rows:
+            input_rows.append(['list_row', row])
+        input_rows.append(['list_end'])
+        input_rows = iter(input_rows)
+
+        _input, _output = self._receive, self._respond
+        self._receive, self._respond = (lambda: input_rows), result.append
+
+        self._process_request(['list', head or {}, req or {}])
+
+        self._receive, self._respond = _input, _output
+        return result
 
     def ddoc_cmd(self, ddoc_id, cmd, func_path, func_args):
         """Runs ``ddoc`` command.
