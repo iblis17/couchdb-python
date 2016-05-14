@@ -321,6 +321,9 @@ class SimpleQueryServer(BaseQueryServer):
 
         if (0, 9, 0) <= self.version < (0, 10, 0):
             self.commands['show_doc'] = render.show_doc
+            self.commands['list_begin'] = render.list_begin
+            self.commands['list_row'] = render.list_row
+            self.commands['list_tail'] = render.list_tail
 
         elif self.version >= (0, 11, 0):
             ddoc_commands = {}
@@ -449,6 +452,36 @@ class SimpleQueryServer(BaseQueryServer):
         funsrc = maybe_extract_source(fun)
         return self._process_request(['show_doc', funsrc, doc or {}, req or {}])
 
+    def list_old(self, fun, rows, head=None, req=None):
+        """Runs ``list_begin``, ``list_row`` and ``list_tail`` commands.
+        Implicitly resets and adds passed function to query server state.
+
+        :param fun: Function object or source string.
+        :type fun: function or str
+
+        :param rows: View result rows as list of dicts with `id`, `key`
+                     and `value` keys.
+        :type rows: list
+
+        :param req: Request object.
+        :type req: dict
+
+        :yield: Two-element lists with token and response object.
+                 First element is for ``list_begin`` command with `start` token,
+                 last one is for ``list_tail`` command with `end` token
+                 and others for ``list_row`` commands with `chunk` token.
+
+        .. versionadded:: 0.9.0
+        .. deprecated:: 0.10.0 Use :meth:`list` instead.
+        """
+        self.reset()
+        self.add_fun(fun)
+        head, req = head or {}, req or {}
+        yield self._process_request(['list_begin', head, req])
+        for row in rows:
+            yield self._process_request(['list_row', row, req])
+        yield self._process_request(['list_tail', req])
+
     def ddoc_cmd(self, ddoc_id, cmd, func_path, func_args):
         """Runs ``ddoc`` command.
         Requires teached ddoc by :meth:`add_ddoc`.
@@ -477,6 +510,11 @@ class SimpleQueryServer(BaseQueryServer):
     def ddocs(self):
         """Returns dict with registered ddocs"""
         return self.commands['ddoc']
+
+    @property
+    def functions(self):
+        """Returns dict with registered ddocs"""
+        return self.state['functions']
 
     @property
     def query_config(self):

@@ -376,6 +376,31 @@ class SimpleQueryServerTestCase(unittest.TestCase):
             }
         )
 
+    def test_list_old(self):
+        def func(head, row, req, info):
+            if head:
+                return {'headers': {'Content-Type': 'text/plain'},
+                        'code': 200,
+                        'body': 'foo'}
+            if row:
+                return row['value']
+            return 'tail'
+        server = self.server((0, 9, 0))
+        rows = [
+            {'value': 'bar'},
+            {'value': 'baz'},
+            {'value': 'bam'},
+        ]
+        result = list(server.list_old(func, rows, {'foo': 'bar'}, {'q': 'ok'}))
+        head, rows, tail = result[0], result[1:-1], result[-1]
+
+        self.assertEqual(head, {'headers': {'Content-Type': 'text/plain'},
+                                'code': 200, 'body': 'foo'})
+        self.assertEqual(rows[0], {'body': 'bar'})
+        self.assertEqual(rows[1], {'body': 'baz'})
+        self.assertEqual(rows[2], {'body': 'bam'})
+        self.assertEqual(tail, {'body': 'tail'})
+
 
 def suite():
     suite = unittest.TestSuite()

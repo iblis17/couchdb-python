@@ -320,9 +320,180 @@ class ShowTestCase(unittest.TestCase):
             self.fail('Show function should not has get_row() method in scope.')
 
 
+class ListTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.server = MockQueryServer()
+
+    def test_simple_list_old(self):
+        def func(head, row, req, info):
+            if head:
+                return {'headers': {'Content-Type': 'text/plain'},
+                        'code': 200,
+                        'body': 'foo'}
+            if row:
+                return row['value']
+            return 'tail'
+
+        self.server.add_fun(func)
+        resp = render.list_begin(self.server, {'foo': 'bar'}, {'q': 'ok'})
+
+        self.assertEqual(resp, {'headers': {'Content-Type': 'text/plain'},
+                                'code': 200, 'body': 'foo'})
+        resp = render.list_row(self.server, {'value': 'bar'}, {'q': 'ok'})
+        self.assertEqual(resp, {'body': 'bar'})
+        resp = render.list_row(self.server, {'value': 'baz'}, {'q': 'ok'})
+        self.assertEqual(resp, {'body': 'baz'})
+        resp = render.list_row(self.server, {'value': 'bam'}, {'q': 'ok'})
+        self.assertEqual(resp, {'body': 'bam'})
+        resp = render.list_tail(self.server, {'q': 'ok'})
+        self.assertEqual(resp, {'body': 'tail'})
+
+    def test_simple_list(self):
+        def func(head, req):
+            send('first chunk')
+            send(req['q'])
+            for row in get_row():
+                send(row['key'])
+            return 'early'
+
+        self.server.m_input_write(['list_row', {'key': 'foo'}])
+        self.server.m_input_write(['list_row', {'key': 'bar'}])
+        self.server.m_input_write(['list_row', {'key': 'baz'}])
+        self.server.m_input_write(['list_end'])
+
+        render.run_list(self.server, func, {}, {'q': 'ok'})
+
+        output = self.server.m_output_read()
+        start, lines, end = output[0], output[1:-1], output[-1]
+
+        self.assertEqual(start, ['start', ['first chunk', 'ok'], {'headers': {}}])
+        self.assertEqual(lines[0], ['chunks', ['foo']])
+        self.assertEqual(lines[1], ['chunks', ['bar']])
+        self.assertEqual(lines[2], ['chunks', ['baz']])
+        self.assertEqual(end, ['end', ['early']])
+
+    def test_no_getrow(self):
+        def func(head, req):
+            send('begin')
+            send(req['q'])
+            return 'end'
+
+        self.server.m_input_write(['list_row', {'key': 'foo'}])
+        self.server.m_input_write(['list_row', {'key': 'bar'}])
+        self.server.m_input_write(['list_row', {'key': 'baz'}])
+        self.server.m_input_write(['list_end'])
+
+        render.run_list(self.server, func, {}, {'q': 'ok'})
+        output = self.server.m_output_read()
+        start, lines, end = output[0], output[1:-1], output[-1]
+
+        self.assertEqual(start, ['start', ['begin', 'ok'], {'headers': {}}])
+        self.assertEqual(end, ['end', ['end']])
+
+    def test_multiple_getrow(self):
+        def func(head, req):
+            send('begin')
+            send(req['q'])
+            for row in get_row():
+                send(row['key'])
+            for row in get_row():
+                assert False, 'no records should be available'
+            for row in get_row():
+                assert False, 'no records should be available'
+            return 'end'
+
+        self.server.m_input_write(['list_row', {'key': 'foo'}])
+        self.server.m_input_write(['list_row', {'key': 'bar'}])
+        self.server.m_input_write(['list_row', {'key': 'baz'}])
+        self.server.m_input_write(['list_end'])
+
+        render.run_list(self.server, func, {}, {'q': 'ok'})
+        output = self.server.m_output_read()
+        start, lines, end = output[0], output[1:-1], output[-1]
+
+        self.assertEqual(start, ['start', ['begin', 'ok'], {'headers': {}}])
+        self.assertEqual(end, ['end', ['end']])
+
+    def test_no_input_records(self):
+        def func(head, req):
+            send('begin')
+            send(req['q'])
+            for row in get_row():
+                send(row['key'])
+            return 'end'
+
+        render.run_list(self.server, func, {}, {'q': 'ok'})
+        output = self.server.m_output_read()
+        start, lines, end = output[0], output[1:-1], output[-1]
+
+        self.assertEqual(start, ['start', ['begin', 'ok'], {'headers': {}}])
+        self.assertEqual(end, ['end', ['end']])
+
+    def test_invalid_list_row(self):
+        def func(head, req):
+            send('begin')
+            send(req['q'])
+            for row in get_row():
+                send(row['key'])
+            return 'end'
+
+        self.server.m_input_write(['reset'])
+        try:
+            render.run_list(self.server, func, {}, {'q': 'ok'})
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.FatalError))
+            self.assertEqual(err.args[0], 'list_error')
+        else:
+            self.fail('`reset` is invalid list row')
+
+    def test_provides(self):
+        def func(head, req):
+            def html():
+                for row in get_row():
+                    send(row['key'])
+                return 'html resp'
+            send('first chunk')
+            send(req['q'])
+            provides('html', html)
+            return 'last chunk'
+
+        self.server.m_input_write(['list_row', {'key': 'foo'}])
+        self.server.m_input_write(['list_row', {'key': 'bar'}])
+        self.server.m_input_write(['list_row', {'key': 'baz'}])
+        self.server.m_input_write(['list_end'])
+
+        req = {'headers': {'Accept': 'text/html,application/atom+xml; q=0.9'},
+               'q': 'ok'}
+        render.run_list(self.server, func, {}, req)
+
+        output = self.server.m_output_read()
+        start, lines, end = output[0], output[1:-1], output[-1]
+
+        headers = {'headers': {'Content-Type': 'text/html; charset=utf-8'}}
+        self.assertEqual(start, ['start', ['first chunk', 'ok'], headers])
+        self.assertEqual(lines[0], ['chunks', ['foo']])
+        self.assertEqual(lines[1], ['chunks', ['bar']])
+        self.assertEqual(lines[2], ['chunks', ['baz']])
+        self.assertEqual(end, ['end', ['html resp']])
+
+    def test_python_exception(self):
+        def func(head, req):
+            1/0
+
+        try:
+            render.run_list(self.server, func, {}, {'q': 'ok'})
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.Error))
+            self.assertEqual(err.args[0], 'render_error')
+        else:
+            self.fail('should raise render error')
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(ShowTestCase, 'test'))
+    suite.addTest(unittest.makeSuite(ListTestCase, 'test'))
     return suite
 
 
