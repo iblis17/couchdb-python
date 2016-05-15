@@ -17,6 +17,24 @@ from couchdb.server.exceptions import Error, FatalError, Forbidden
 log = logging.getLogger(__name__)
 
 
+class EggExports(dict):
+    """Sentinel for egg export statements."""
+
+
+def maybe_b64egg(b64str):
+    """Checks if passed string is base64 encoded egg file"""
+    # Quick and dirty check for base64 encoded zipfile.
+    # Saves time and IO operations in most cases.
+    return isinstance(b64str, util.strbase) and b64str.startswith('UEsDBBQAAAAIA')
+
+
+def maybe_export_egg(source, allow_eggs=False, egg_cache=None):
+    """Tries to extract export statements from encoded egg"""
+    if allow_eggs and maybe_b64egg(source):
+        return import_b64egg(source, egg_cache)
+    return None
+
+
 def resolve_module(names, mod, root=None):
     def helper():
         return ('\n    id: %r'
@@ -78,3 +96,48 @@ def resolve_module(names, mod, root=None):
         'parent': mod,
         'id': (idx is not None) and (idx + '/' + name) or name
     })
+
+
+def import_b64egg(b64str, egg_cache=None):
+    """Imports top level namespace from base64 encoded egg file.
+
+    For Python 2.4 `setuptools <http://pypi.python.org/pypi/setuptools>`_
+    package required.
+
+    :param b64str: Base64 encoded egg file.
+    :type b64str: str
+
+    :return: Egg top level namespace or None if egg import disabled.
+    :rtype: dict
+    """
+    if iter_modules is None:
+        raise ImportError('No tools available to work with eggs.'
+                          ' Probably, setuptools package could solve'
+                          ' this problem.')
+    egg = None
+    egg_path = None
+    egg_cache = (egg_cache or
+                 os.environ.get('PYTHON_EGG_CACHE') or
+                 os.path.join(tempfile.gettempdir(), '.python-eggs'))
+    try:
+        try:
+            if not os.path.exists(egg_cache):
+                os.mkdir(egg_cache)
+            hegg, egg_path = tempfile.mkstemp(dir=egg_cache)
+            egg = os.fdopen(hegg, 'wb')
+            egg.write(base64.b64decode(b64str))
+            egg.close()
+            exports = EggExports(
+                [(name, loader.load_module(name))
+                 for loader, name, ispkg in iter_modules([egg_path])]
+            )
+        except:
+            log.exception('Egg import failed')
+            raise
+        else:
+            if not exports:
+                raise Error('egg_error', 'Nothing to export')
+            return exports
+    finally:
+        if egg_path is not None and os.path.exists(egg_path):
+            os.unlink(egg_path)

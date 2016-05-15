@@ -100,9 +100,35 @@ class DDocModulesTestCase(unittest.TestCase):
                           './foo/bar/baz'.split('/'), {}, module)
 
 
+class EggModulesTestCase(unittest.TestCase):
+
+    def test_require_egg(self):
+        exports = compiler.import_b64egg(DUMMY_EGG)
+        self.assertEqual(exports['universe'].question.get_answer(), 42)
+
+    def test_fail_for_invalid_egg(self):
+        egg = 'UEsDBBQAAAAIAKx1qD6TBtcyAwAAAAEAAAAdAAAARUdHLUlORk8vZGVwZW5kZW=='
+        self.assertRaises(exceptions.Error, compiler.import_b64egg, egg)
+
+    def test_fail_for_invalid_b64egg_string(self):
+        egg = 'UEsDBBQAAAAIAKx1qD6TBtcyAwAAAAEAAAAdAAAARUdHLUlORk8vZGVwZW5kZW'
+        # python3 will raise ``binascii.Error``
+        # https://docs.python.org/3/library/base64.html#base64.b64decode
+        self.assertRaises((TypeError, binascii.Error),
+                          compiler.import_b64egg, egg)
+
+    def test_fail_for_no_setuptools_or_pkgutils(self):
+        egg = 'UEsDBBQAAAAIAKx1qD6TBtcyAwAAAAEAAAAdAAAARUdHLUlORk8vZGVwZW5kZW=='
+        func = compiler.iter_modules
+        compiler.iter_modules = None
+        self.assertRaises(ImportError, compiler.import_b64egg, egg)
+        compiler.iter_modules = func
+
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(DDocModulesTestCase, 'test'))
+    suite.addTest(unittest.makeSuite(EggModulesTestCase, 'test'))
     return suite
 
 
