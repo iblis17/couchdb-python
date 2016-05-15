@@ -35,6 +35,37 @@ def maybe_export_egg(source, allow_eggs=False, egg_cache=None):
     return None
 
 
+def maybe_compile_function(source):
+    """Tries to compile Python source code to bytecode"""
+    if isinstance(source, util.strbase):
+        return compile_to_bytecode(source)
+    return None
+
+
+def maybe_export_bytecode(source, context):
+    """Tries to extract export statements from executed bytecode source"""
+    if isinstance(source, CodeType):
+        exec(source, context)
+        return context.get('exports', {})
+    return None
+
+
+def maybe_export_cached_egg(source):
+    """Tries to extract export statements from cached egg namespace"""
+    if isinstance(source, EggExports):
+        return source
+    return None
+
+
+def cache_to_ddoc(ddoc, path, obj):
+    """Cache object to ddoc by specified path"""
+    assert path, 'Path should not be empty'
+    point = ddoc
+    for item in path:
+        prev, point = point, point.get(item)
+    prev[item] = obj
+
+
 def resolve_module(names, mod, root=None):
     def helper():
         return ('\n    id: %r'
