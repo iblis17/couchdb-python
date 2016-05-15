@@ -14,7 +14,16 @@ from types import ModuleType
 from couchdb import json, util
 from couchdb.server.exceptions import Error, FatalError, Forbidden
 
+__all__ = ('require', 'DEFAULT_CONTEXT')
+
 log = logging.getLogger(__name__)
+
+DEFAULT_CONTEXT = {
+    'Error': Error,
+    'FatalError': FatalError,
+    'Forbidden': Forbidden,
+    'json': json,
+}
 
 
 class EggExports(dict):
@@ -172,3 +181,119 @@ def import_b64egg(b64str, egg_cache=None):
     finally:
         if egg_path is not None and os.path.exists(egg_path):
             os.unlink(egg_path)
+
+
+def require(ddoc, context=None, **options):
+    """Wraps design ``require`` function with access to design document.
+
+    :param ddoc: Design document.
+    :type ddoc: dict
+
+    :return: Require function object.
+
+    Require function extracts export statements from stored module within
+    design document. It could be used to access shared libraries of common used
+    functions, however it's available only for DDoc function set.
+
+    This function is from CommonJS world and works by detailed
+    `specification <http://wiki.commonjs.org/wiki/Modules/1.1.1>`_.
+
+    :param path: Path to stored module through document structure fields.
+    :type path: basestring
+
+    :param module: Current execution context. Normally, you wouldn't used this
+        argument.
+    :type module: dict
+
+    :return: Exported statements.
+    :rtype: dict
+
+    Example of stored module:
+        >>> class Validate(object):
+        >>>     def __init__(self, newdoc, olddoc, userctx):
+        >>>         self.newdoc = newdoc
+        >>>         self.olddoc = olddoc
+        >>>         self.userctx = userctx
+        >>>
+        >>>     def is_author():
+        >>>         return self.doc['author'] == self.userctx['name']
+        >>>
+        >>>     def is_admin():
+        >>>         return '_admin' in self.userctx['roles']
+        >>>
+        >>>     def unchanged(field):
+        >>>         assert (self.olddoc is not None
+        >>>                 and self.olddoc[field] == self.newdoc[field])
+        >>>
+        >>> exports['init'] = Validate
+
+    Example of usage:
+        >>> def validate_doc_update(newdoc, olddoc, userctx):
+        >>>     init_v = require('lib/validate')['init']
+        >>>     v = init_v(newdoc, olddoc, userctx)
+        >>>
+        >>>     if v.is_admin():
+        >>>         return True
+        >>>
+        >>>     v.unchanged('author')
+        >>>     v.unchanged('created_at')
+        >>>     return True
+
+    .. versionadded:: 0.11.0
+    .. versionchanged:: 1.1.0 Available for map functions.
+    """
+    context = context or DEFAULT_CONTEXT.copy()
+    _visited_ids = []
+
+    def require(path, module=None):
+        log.debug('Looking for export objects at %s', path)
+        module = module and module.get('parent') or {}
+        new_module = resolve_module(path.split('/'), module, ddoc)
+
+        if new_module['id'] in _visited_ids:
+            log.error('Circular require calls have created deadlock!'
+                      ' DDoc id `%s` ; call stack: %r',
+                      ddoc.get('_id'), _visited_ids)
+            del _visited_ids[:]
+            raise RuntimeError('Require function calls have created deadlock')
+        _visited_ids.append(new_module['id'])
+        source = new_module['current']
+
+        module_context = context.copy()
+        module_context.update({
+            'module': new_module,
+            'exports': new_module['exports'],
+        })
+        module_context['require'] = lambda path: require(path, new_module)
+        enable_eggs = options.get('enable_eggs', False)
+        egg_cache = options.get('egg_cache', None)
+
+        try:
+            exports = maybe_export_egg(source, enable_eggs, egg_cache)
+            if exports is not None:
+                cache_to_ddoc(ddoc, new_module['id'].split('/'), exports)
+                return exports
+
+            exports = maybe_export_cached_egg(source)
+            if exports is not None:
+                return exports
+
+            bytecode = maybe_compile_function(source)
+            if bytecode is not None:
+                cache_to_ddoc(ddoc, new_module['id'].split('/'), bytecode)
+                source = bytecode
+            try:
+                exports = maybe_export_bytecode(source, module_context)
+                if exports is not None:
+                    return exports
+            except Exception as err:
+                log.exception('Failed to compile source code:\n%s',
+                              new_module['current'])
+                raise Error('compilation_error', str(err))
+
+            raise Error('invalid_required_object', repr(new_module['current']))
+        finally:
+            if _visited_ids:
+                _visited_ids.pop()
+
+    return require
