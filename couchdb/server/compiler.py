@@ -14,7 +14,7 @@ from types import ModuleType
 from couchdb import json, util
 from couchdb.server.exceptions import Error, FatalError, Forbidden
 
-__all__ = ('require', 'DEFAULT_CONTEXT')
+__all__ = ('compile_func', 'require', 'DEFAULT_CONTEXT')
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +28,28 @@ DEFAULT_CONTEXT = {
 
 class EggExports(dict):
     """Sentinel for egg export statements."""
+
+
+def compile_to_bytecode(funsrc, encoding='utf-8'):
+    """Compiles function source string to bytecode
+
+    :param str encoding: if the funsrc is a bytes-like object,
+                         a proper encoding should be provided.
+    """
+    log.debug('Compile source code to function\n%s', funsrc)
+    assert isinstance(funsrc, util.strbase), 'Invalid source object %r' % funsrc
+
+    if isinstance(funsrc, util.utype):
+        funsrc = funsrc.encode('utf-8')
+    elif isinstance(funsrc, util.btype):
+        # convert to utf-8 byte string
+        funsrc = funsrc.decode(encoding).encode('utf-8')
+
+    if not funsrc.startswith(BOM_UTF8):
+        funsrc = BOM_UTF8 + funsrc
+
+    # compile + exec > exec
+    return compile(funsrc.replace(b'\r\n', b'\n'), '<string>', 'exec')
 
 
 def maybe_b64egg(b64str):
@@ -297,3 +319,69 @@ def require(ddoc, context=None, **options):
                 _visited_ids.pop()
 
     return require
+
+
+def compile_func(funsrc, ddoc=None, context=None, encoding='utf-8', **options):
+    """Compile source code and extract function object from it.
+
+    :param funsrc: Python source code.
+    :type funsrc: unicode
+
+    :param ddoc: Optional argument which must represent design document.
+    :type ddoc: dict
+
+    :param context: Custom context objects which function could operate with.
+    :type context: dict
+
+    :param options: Compiler config options.
+
+    :param encoding: Encoding of source code.
+    :type encoding: str
+
+    :return: Function object.
+
+    :raises:
+        - :exc:`~couchdb.server.exceptions.Error`
+          If source code compilation failed or it doesn't contains function
+          definition.
+
+    .. note::
+        ``funsrc`` should contains only one function definition and import
+        statements (optional) or :exc:`~couchdb.server.exceptions.Error`
+        will be raised.
+
+    """
+    if not context:
+        context = DEFAULT_CONTEXT.copy()
+    else:
+        context, _ = DEFAULT_CONTEXT.copy(), context
+        context.update(_)
+    if ddoc is not None:
+        context['require'] = require(ddoc, context, **options)
+
+    globals_ = {}
+    try:
+        bytecode = compile_to_bytecode(funsrc, encoding=encoding)
+        exec(bytecode, context, globals_)
+    except Exception as err:
+        log.exception('Failed to compile source code:\n%s', funsrc)
+        raise Error('compilation_error', str(err))
+
+    msg = None
+    func = None
+    for item in globals_.values():
+        if isinstance(item, FunctionType):
+            if func is None:
+                func = item
+            else:
+                msg = 'Multiple functions are defined. Only one is allowed.'
+        elif not isinstance(item, ModuleType):
+            msg = 'Only functions could be defined at top level namespace'
+        if msg is not None:
+            break
+    if msg is None and not isinstance(func, FunctionType):
+        msg = 'Expression does not eval to a function'
+    if msg is not None:
+        log.error('%s\n%s', msg, funsrc)
+        raise Error('compilation_error', msg)
+    return func

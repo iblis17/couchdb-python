@@ -232,8 +232,146 @@ class EggModulesTestCase(unittest.TestCase):
         compiler.iter_modules = func
 
 
+class CompilerTestCase(unittest.TestCase):
+
+    def test_compile_func(self):
+        funsrc = 'def test(): return 42'
+        func = compiler.compile_func(funsrc)
+        self.assertTrue(isinstance(func, types.FunctionType))
+        self.assertEqual(func(), 42)
+
+    def test_compile_source_with_windows_formatting(self):
+        funsrc = 'def test():\r\n\treturn 42'
+        func = compiler.compile_func(funsrc)
+        self.assertEqual(func(), 42)
+
+    def test_fail_if_variables_defined_in_source(self):
+        funsrc = (
+            'x = 10\n'
+            'def test():\n'
+            '  return 42'
+        )
+        try:
+            compiler.compile_func(funsrc)
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.Error))
+            self.assertEqual(err.args[0], 'compilation_error')
+
+    def test_allow_imports(self):
+        funsrc = (
+            'import math\n'
+            'def test(math=math):\n'
+            '  return math.sqrt(42*42)'
+        )
+        func = compiler.compile_func(funsrc)
+        self.assertEqual(func(), 42)
+
+    def test_fail_for_non_clojured_imports(self):
+        funsrc = (
+            'import math\n'
+            'def test():\n'
+            '  return math.sqrt(42*42)')
+        func = compiler.compile_func(funsrc)
+        self.assertRaises(NameError, func)
+
+    def test_ascii_function_source_string(self):
+        funsrc = 'def test(): return 42'
+        compiler.compile_func(funsrc)
+
+    def test_unicode_function_source_string(self):
+        funsrc = u'def test(): return "тест пройден"'
+        compiler.compile_func(funsrc)
+
+    def test_utf8_function_source_string(self):
+        funsrc = 'def test(): return "тест пройден"'
+        compiler.compile_func(funsrc)
+
+    def test_encoded_function_source_string(self):
+        funsrc = u'def test(): return "тест пройден"'.encode('cp1251')
+        compiler.compile_func(funsrc, encoding='cp1251')
+
+    def test_fail_for_multiple_functions_definition(self):
+        funsrc = (
+            'def foo():\n'
+            '  return "bar"\n'
+            'def bar():\n'
+            '  return "baz"\n'
+            'def baz():\n'
+            '  return "foo"'
+        )
+        try:
+            compiler.compile_func(funsrc)
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.Error))
+            self.assertEqual(err.args[0], 'compilation_error')
+
+    def test_fail_eval_source_to_function(self):
+        try:
+            compiler.compile_func('')
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.Error))
+            self.assertEqual(err.args[0], 'compilation_error')
+
+    def test_fail_for_invalid_python_source_code(self):
+        funsrc = (
+            'def test(foo=baz):\n'
+            '  return "bar"'
+        )
+        try:
+            compiler.compile_func(funsrc)
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.Error))
+            self.assertEqual(err.args[0], 'compilation_error')
+            self.assertTrue(isinstance(err.args[1], util.strbase))
+
+    def test_fail_for_runtime_error_on_compilation(self):
+        funsrc = '1/0'
+        try:
+            compiler.compile_func(funsrc)
+        except Exception as err:
+            self.assertTrue(isinstance(err, exceptions.Error))
+            self.assertEqual(err.args[0], 'compilation_error')
+
+    def test_default_context(self):
+        funsrc = (
+            'def test():\n'
+            '  return json.encode(42)\n'
+            'assert issubclass(Error, Exception)\n'
+            'assert issubclass(FatalError, Exception)\n'
+            'assert issubclass(Forbidden, Exception)')
+        func = compiler.compile_func(funsrc)
+        self.assertEqual(func(), '42')
+
+    def test_extend_default_context(self):
+        import math
+        funsrc = (
+            'def test():\n'
+            '  return json.encode(int(math.sqrt(1764)))\n'
+        )
+        func = compiler.compile_func(funsrc, context={'math': math})
+        self.assertEqual(func(), '42')
+
+    def test_add_require_context_function_if_ddoc_specified(self):
+        funsrc = (
+            'def test(): pass\n'
+            'assert isinstance(require, object)'
+        )
+        compiler.compile_func(funsrc, {'foo': 'bar'})
+
+    def test_remove_require_context_function_if_ddoc_missed(self):
+        funsrc = (
+            'def test(): pass\n'
+            'try:'
+            '  assert isinstance(require, object)\n'
+            'except NameError:\n'
+            '  pass'
+        )
+        compiler.compile_func(funsrc)
+
+
 def suite():
     suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(CompilerTestCase, 'test'))
     suite.addTest(unittest.makeSuite(DDocModulesTestCase, 'test'))
     suite.addTest(unittest.makeSuite(EggModulesTestCase, 'test'))
     return suite
