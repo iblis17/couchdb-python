@@ -39,6 +39,7 @@ def respond(obj, output=sys.stdout):
     :type obj: dict or list
 
     :param output: Output file-like object.
+    :type output: stream object for unicode text.
     """
     if obj is None:
         log.debug('Nothing to respond')
@@ -49,8 +50,9 @@ def respond(obj, output=sys.stdout):
         log.exception('Unable to encode object to json:\n%r', obj)
         raise FatalError('json_encode', str(err))
     else:
-        if isinstance(obj, util.utype):
-            obj = obj.encode('utf-8')
+        if isinstance(obj, util.btype):
+            obj = obj.decode('utf-8')
+
         log.debug('Output:\n%r', obj)
         output.write(obj)
         output.flush()
