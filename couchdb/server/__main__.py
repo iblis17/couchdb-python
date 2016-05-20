@@ -74,7 +74,7 @@ def main():
             sys.argv[1:], 'h',
             ['version', 'help', 'json-module=', 'debug', 'log-file=',
              'log-level=', 'allow-get-update', 'enable-eggs',
-             'egg-cache', 'couchdb-version=']
+             'egg-cache=', 'couchdb-version=']
         )
 
         db_version = None
