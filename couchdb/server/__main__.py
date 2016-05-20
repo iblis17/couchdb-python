@@ -13,6 +13,7 @@ import logging
 import os
 import sys
 
+from couchdb import __version__ as VERSION
 from couchdb import json
 from couchdb.server import SimpleQueryServer
 
@@ -66,8 +67,6 @@ def run(input=sys.stdin, output=sys.stdout, version=None, **config):
 
 def main():
     """Command-line entry point for running the query server."""
-    from couchdb import __version__ as VERSION
-
     qs_config = {}
 
     try:
