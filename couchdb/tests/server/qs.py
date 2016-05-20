@@ -3,12 +3,12 @@
 import unittest
 
 from functools import partial
+from io import StringIO
 
 from couchdb import json
 from couchdb.server import BaseQueryServer, SimpleQueryServer
 from couchdb.server import exceptions
 from couchdb.server.helpers import wrap_func_to_ddoc
-from couchdb.util import StringIO
 
 
 class BaseQueryServerTestCase(unittest.TestCase):
@@ -92,7 +92,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
             server.process_request(['foo', 'bar'])
         except Exception:
             pass
-        self.assertEqual(output.getvalue(), b'["error", "foo", "bar"]\n')
+        self.assertEqual(output.getvalue(), u'["error", "foo", "bar"]\n')
 
     def test_handle_qs_error(self):
         def command_foo(*a, **k):
@@ -130,7 +130,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server = BaseQueryServer(version=(0, 11, 0), output=output)
         server.commands['foo'] = command_foo
         server.process_request(['foo', 'bar'])
-        self.assertEqual(output.getvalue(), b'["error", "foo", "bar"]\n')
+        self.assertEqual(output.getvalue(), u'["error", "foo", "bar"]\n')
 
     def test_handle_forbidden_error(self):
         def command_foo(*a, **k):
@@ -157,7 +157,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server = BaseQueryServer(output=output)
         server.commands['foo'] = command_foo
         server.process_request(['foo', 'bar'])
-        self.assertEqual(output.getvalue(), b'{"forbidden": "foo"}\n')
+        self.assertEqual(output.getvalue(), u'{"forbidden": "foo"}\n')
 
     def test_handle_python_exception(self):
         def command_foo(*a, **k):
@@ -206,7 +206,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
             pass
         self.assertEqual(
             output.getvalue(),
-            b'["error", "ValueError", "that was a typo"]\n'
+            u'["error", "ValueError", "that was a typo"]\n'
         )
 
     def test_process_request(self):
@@ -220,7 +220,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         self.assertTrue(server.process_request(['foo', 42]))
 
     def test_receive(self):
-        server = BaseQueryServer(input=StringIO(b'["foo"]\n{"bar": "baz"}\n'))
+        server = BaseQueryServer(input=StringIO(u'["foo"]\n{"bar": "baz"}\n'))
         self.assertEqual(list(server.receive()), [['foo'], {'bar': 'baz'}])
 
     def test_response(self):
@@ -228,7 +228,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server = BaseQueryServer(output=output)
         server.respond(['foo'])
         server.respond({'bar': 'baz'})
-        self.assertEqual(output.getvalue(), b'["foo"]\n{"bar": "baz"}\n')
+        self.assertEqual(output.getvalue(), u'["foo"]\n{"bar": "baz"}\n')
 
     def test_log_oldstyle(self):
         output = StringIO()
@@ -236,7 +236,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server.log(['foo', {'bar': 'baz'}, 42])
         self.assertEqual(
             output.getvalue(),
-            b'{"log": "[\\"foo\\", {\\"bar\\": \\"baz\\"}, 42]"}\n'
+            u'{"log": "[\\"foo\\", {\\"bar\\": \\"baz\\"}, 42]"}\n'
         )
 
     def test_log_none_message(self):
@@ -245,7 +245,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server.log(None)
         self.assertEqual(
             output.getvalue(),
-            b'{"log": "Error: attempting to log message of None"}\n'
+            u'{"log": "Error: attempting to log message of None"}\n'
         )
 
     def test_log_newstyle(self):
@@ -254,7 +254,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server.log(['foo', {'bar': 'baz'}, 42])
         self.assertEqual(
             output.getvalue(),
-            b'["log", "[\\"foo\\", {\\"bar\\": \\"baz\\"}, 42]"]\n'
+            u'["log", "[\\"foo\\", {\\"bar\\": \\"baz\\"}, 42]"]\n'
         )
 
 

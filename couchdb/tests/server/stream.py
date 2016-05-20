@@ -2,16 +2,17 @@
 #
 import unittest
 
+from io import StringIO, BytesIO
+
 from couchdb.server import exceptions
 from couchdb.server import stream
-from couchdb.util import StringIO
 
 
 class StreamTestCase(unittest.TestCase):
 
     def test_receive(self):
         """should decode json data from input stream"""
-        input = StringIO(b'["foo", "bar"]\n["bar", {"foo": "baz"}]')
+        input = StringIO(u'["foo", "bar"]\n["bar", {"foo": "baz"}]')
         reader = stream.receive(input)
         self.assertEqual(next(reader), ['foo', 'bar'])
         self.assertEqual(next(reader), ['bar', {'foo': 'baz'}])
@@ -19,7 +20,7 @@ class StreamTestCase(unittest.TestCase):
 
     def test_fail_on_receive_invalid_json_data(self):
         """should raise FatalError if json decode fails"""
-        input = StringIO(b'["foo", "bar" "bar", {"foo": "baz"}]')
+        input = StringIO(u'["foo", "bar" "bar", {"foo": "baz"}]')
         try:
             next(stream.receive(input))
         except Exception as err:
@@ -30,7 +31,7 @@ class StreamTestCase(unittest.TestCase):
         """should encode object to json and write it to output stream"""
         output = StringIO()
         stream.respond(['foo', {'bar': ['baz']}], output)
-        self.assertEqual(output.getvalue(), b'["foo", {"bar": ["baz"]}]\n')
+        self.assertEqual(output.getvalue(), u'["foo", {"bar": ["baz"]}]\n')
 
     def test_fail_on_respond_unserializable_to_json_object(self):
         """should raise FatalError if json encode fails"""
@@ -45,7 +46,17 @@ class StreamTestCase(unittest.TestCase):
         """should not send any data if None passed"""
         output = StringIO()
         stream.respond(None, output)
-        self.assertEqual(output.getvalue(), b'')
+        self.assertEqual(output.getvalue(), u'')
+
+    def test_respond_bytes_string(self):
+        """
+        should raise TypeError if there is not an unicode output interface
+
+        In this case, we consider it as an internal error of the query server.
+        Do not need to teel couchdb the reason. Just crash.
+        """
+        output = BytesIO()
+        self.assertRaises(TypeError, stream.respond, [], output)
 
 
 def suite():
