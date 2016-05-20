@@ -62,10 +62,8 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server = BaseQueryServer(output=output)
         server.handle_fatal_error = maybe_fatal_error(server.handle_fatal_error)
         server.commands['foo'] = command_foo
-        try:
-            server.process_request(['foo', 'bar'])
-        except Exception as err:
-            self.assertTrue(isinstance(err, exceptions.FatalError))
+        self.assertRaises(exceptions.FatalError,
+                          server.process_request, ['foo', 'bar'])
 
     def test_response_for_fatal_error_oldstyle(self):
         def command_foo(*a, **k):
@@ -115,6 +113,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
     def test_response_for_qs_error_oldstyle(self):
         def command_foo(*a, **k):
             raise exceptions.Error('foo', 'bar')
+
         output = StringIO()
         server = BaseQueryServer(version=(0, 9, 0), output=output)
         server.commands['foo'] = command_foo
@@ -174,10 +173,7 @@ class BaseQueryServerTestCase(unittest.TestCase):
         server = BaseQueryServer(output=output)
         server.handle_python_exception = maybe_py_error(server.handle_python_exception)
         server.commands['foo'] = command_foo
-        try:
-            server.process_request(['foo', 'bar'])
-        except Exception as err:
-            self.assertTrue(isinstance(err, ValueError))
+        self.assertRaises(ValueError, server.process_request, ['foo', 'bar'])
 
     def test_response_python_exception_oldstyle(self):
         def command_foo(*a, **k):
