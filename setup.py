@@ -9,7 +9,7 @@
 
 import sys
 try:
-    from setuptools import setup
+    from setuptools import find_packages, setup
     has_setuptools = True
 except ImportError:
     from distutils.core import setup
@@ -37,6 +37,7 @@ else:
             ],
         },
         'install_requires': requirements,
+        'packages': find_packages(),
         'test_suite': 'couchdb.tests.__main__.suite',
         'zip_safe': True,
     }
@@ -68,6 +69,5 @@ interface for the CouchDB server.""",
         'Topic :: Database :: Front-Ends',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    packages = ['couchdb', 'couchdb.tools', 'couchdb.tests'],
     **setuptools_options
 )
