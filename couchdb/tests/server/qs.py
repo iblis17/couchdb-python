@@ -235,13 +235,22 @@ class BaseQueryServerTestCase(unittest.TestCase):
             u'{"log": "[\\"foo\\", {\\"bar\\": \\"baz\\"}, 42]"}\n'
         )
 
-    def test_log_none_message(self):
+    def test_log_none_message_oldstyle(self):
         output = StringIO()
         server = BaseQueryServer(version=(0, 9, 0), output=output)
         server.log(None)
         self.assertEqual(
             output.getvalue(),
             u'{"log": "Error: attempting to log message of None"}\n'
+        )
+
+    def test_log_none_message_newstyle(self):
+        output = StringIO()
+        server = BaseQueryServer(output=output)
+        server.log(None)
+        self.assertEqual(
+            output.getvalue(),
+            u'["log", "Error: attempting to log message of None"]\n'
         )
 
     def test_log_newstyle(self):

@@ -241,15 +241,14 @@ class BaseQueryServer(object):
             Log message format has changed from ``{"log": message}`` to
             ``["log", message]``
         """
+        if message is None:
+            message = 'Error: attempting to log message of None'
+        if not isinstance(message, util.strbase):
+            message = json.encode(message)
+
         if self.version < (0, 11, 0):
-            if message is None:
-                message = 'Error: attempting to log message of None'
-            if not isinstance(message, util.strbase):
-                message = json.encode(message)
             res = {'log': message}
         else:
-            if not isinstance(message, util.strbase):
-                message = json.encode(message)
             res = ['log', message]
         self.respond(res)
 
