@@ -119,7 +119,7 @@ def resolve_module(names, mod, root=None):
             'id': idx,
             'exports': {}
         }
-    log.debug('Resolving module at %s, remain path: %s', (idx, names))
+    log.debug('Resolving module at %s, remain path: %s', idx, names)
     name = names.pop(0)
     if not name:
         raise Error('invalid_require_path',
