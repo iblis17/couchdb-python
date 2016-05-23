@@ -224,13 +224,6 @@ class EggModulesTestCase(unittest.TestCase):
         self.assertRaises((TypeError, binascii.Error),
                           compiler.import_b64egg, egg)
 
-    def test_fail_for_no_setuptools_or_pkgutils(self):
-        egg = 'UEsDBBQAAAAIAKx1qD6TBtcyAwAAAAEAAAAdAAAARUdHLUlORk8vZGVwZW5kZW=='
-        func = compiler.iter_modules
-        compiler.iter_modules = None
-        self.assertRaises(ImportError, compiler.import_b64egg, egg)
-        compiler.iter_modules = func
-
 
 class CompilerTestCase(unittest.TestCase):
 
