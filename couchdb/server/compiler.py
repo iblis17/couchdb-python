@@ -163,19 +163,12 @@ def resolve_module(names, mod, root=None):
 def import_b64egg(b64str, egg_cache=None):
     """Imports top level namespace from base64 encoded egg file.
 
-    For Python 2.4 `setuptools <http://pypi.python.org/pypi/setuptools>`_
-    package required.
-
     :param b64str: Base64 encoded egg file.
     :type b64str: str
 
     :return: Egg top level namespace or None if egg import disabled.
     :rtype: dict
     """
-    if iter_modules is None:
-        raise ImportError('No tools available to work with eggs.'
-                          ' Probably, setuptools package could solve'
-                          ' this problem.')
     egg = None
     egg_path = None
     egg_cache = (egg_cache or
