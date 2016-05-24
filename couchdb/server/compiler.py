@@ -2,6 +2,7 @@
 #
 """Proceeds query server function compilation within special context."""
 import base64
+import binascii
 import os
 import logging
 import tempfile
@@ -56,7 +57,14 @@ def maybe_b64egg(b64str):
     """Checks if passed string is base64 encoded egg file"""
     # Quick and dirty check for base64 encoded zipfile.
     # Saves time and IO operations in most cases.
-    return isinstance(b64str, util.strbase) and b64str.startswith('UEsDBBQAAAAIA')
+    if not isinstance(b64str, util.strbase):
+        return False
+
+    try:
+        # b'PK\x03\x04' is the magic number of zipfile.
+        return base64.b64decode(b64str[:8])[:4] == b'PK\x03\x04'
+    except (TypeError, binascii.Error):
+        return False
 
 
 def maybe_export_egg(source, allow_eggs=False, egg_cache=None):
