@@ -265,7 +265,7 @@ def require(ddoc, context=None, **options):
     .. versionadded:: 0.11.0
     .. versionchanged:: 1.1.0 Available for map functions.
     """
-    context = context or DEFAULT_CONTEXT.copy()
+    context = context if context is not None else DEFAULT_CONTEXT.copy()
     _visited_ids = []
 
     def require(path, module=None):
