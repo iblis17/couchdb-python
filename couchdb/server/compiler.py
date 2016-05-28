@@ -286,8 +286,8 @@ def require(ddoc, context=None, **options):
         module_context.update({
             'module': new_module,
             'exports': new_module['exports'],
+            'require': lambda path: require(path, new_module),
         })
-        module_context['require'] = lambda path: require(path, new_module)
         enable_eggs = options.get('enable_eggs', False)
         egg_cache = options.get('egg_cache', None)
 
