@@ -185,6 +185,7 @@ class DDocModulesTestCase(unittest.TestCase):
         require = compiler.require(ddoc, enable_eggs=True)
         exports = require('lib/utils.py')
         self.assertEqual(exports['foo'](), 1)
+        self.assertEqual(ddoc['lib']['egg'], DUMMY_EGG)
 
     def test_fail_on_resolving_deadlock(self):
         ddoc = {
