@@ -51,7 +51,6 @@ class BaseQueryServer(object):
         self._config = {}
         self._state = {
             'view_lib': None,
-            'line_length': 0,
             'query_config': {},
             'functions': [],
             'functions_src': [],

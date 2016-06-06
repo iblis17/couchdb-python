@@ -79,7 +79,8 @@ def reduce(server, reduce_funs, kvs, rereduce=False):
     :raises:
         - :exc:`~couchdb.server.exceptions.Error`
           If any Python exception occurs or reduce output is twice longer
-          as state.line_length and reduce_limit is enabled in state.query_config
+          than input key-value pairs.
+          In the latter case, we consider it as ``reduce_overflow_error``.
     """
     reductions = []
     _append = reductions.append
@@ -132,7 +133,8 @@ def rereduce(server, reduce_funs, values):
     :raises:
         - :exc:`~couchdb.server.exceptions.Error`
           If any Python exception occurs or reduce output is twice longer
-          as state.line_length and reduce_limit is enabled in state.query_config
+          than input key-value pairs.
+          In the latter case, we consider it as ``reduce_overflow_error``.
     """
     log.debug('Rereducing values:\n%s', values)
     return reduce(server, reduce_funs, values, rereduce=True)
