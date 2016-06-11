@@ -3,7 +3,7 @@
 import copy
 import logging
 
-from couchdb import json
+from couchdb import json, util
 from couchdb.server.exceptions import QueryServerException, Error
 
 __all__ = ('map_doc', 'reduce', 'rereduce')
@@ -37,7 +37,21 @@ def map_doc(server, doc):
         for idx, func in enumerate(server.state['functions']):
             # TODO: https://issues.apache.org/jira/browse/COUCHDB-729
             # Apply copy.deepcopy for `key` and `value` to fix this issue
-            _append([[key, value] for key, value in func(doc) or []])
+            pairs = []
+            for pair in func(doc) or []:
+                # avoid str types being unpack without error
+                if isinstance(pair, util.strbase):
+                    raise Error('map function must yield/return key-value pairs'
+                                ', not a string: `{0!r}`'.format(pair))
+                try:
+                    key, val = pair
+                except (TypeError, ValueError):
+                    raise Error('map function must yield/return key-value pairs'
+                                ', invalid value: `{0!r}`'.format(pair))
+                else:
+                    pairs.append([key, val])
+            _append(pairs)
+
             if doc != orig_doc:
                 log.warning('Document `%s` had been changed by map function'
                             ' `%s`, but was restored to original state',

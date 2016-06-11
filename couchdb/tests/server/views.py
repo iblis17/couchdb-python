@@ -117,6 +117,92 @@ class MapTestCase(unittest.TestCase):
         doc = {'_id': 'foo'}
         views.map_doc(self.server, doc)
 
+    def test_yield_non_iterable(self):
+        """should raise Error if map function do not yield iterable"""
+        state.add_fun(
+            self.server,
+            'def mapfun(doc):\n'
+            '  yield 2, 4\n'
+            '  yield 42'
+        )
+        doc = {'_id': 'foo'}
+        try:
+            views.map_doc(self.server, doc)
+        except exceptions.Error as err:
+            self.assertTrue('invalid value' in err.args[0])
+            self.assertTrue('`42`' in err.args[0])
+
+    def test_yield_non_pair(self):
+        """should raise Error if map function do not yield pair"""
+        state.add_fun(
+            self.server,
+            'def mapfun(doc):\n'
+            '  yield 2, 4\n'
+            '  yield [42]'
+        )
+        doc = {'_id': 'foo'}
+        try:
+            views.map_doc(self.server, doc)
+        except exceptions.Error as err:
+            self.assertTrue('invalid value' in err.args[0])
+            self.assertTrue('`[42]`' in err.args[0])
+
+    def test_yield_str_type(self):
+        """should raise Error if map function yield a string"""
+        state.add_fun(
+            self.server,
+            'def mapfun(doc):\n'
+            '  yield 2, 4\n'
+            '  yield "42"'
+        )
+        doc = {'_id': 'foo'}
+        try:
+            views.map_doc(self.server, doc)
+        except exceptions.Error as err:
+            self.assertTrue('not a string' in err.args[0])
+
+    def test_return_non_iterable(self):
+        """should raise Error
+        if map function do not return a serise of iterable"""
+        state.add_fun(
+            self.server,
+            'def mapfun(doc):\n'
+            '  return [(2, 4), 42]'
+        )
+        doc = {'_id': 'foo'}
+        try:
+            views.map_doc(self.server, doc)
+        except exceptions.Error as err:
+            self.assertTrue('invalid value' in err.args[0])
+            self.assertTrue('`42`' in err.args[0])
+
+    def test_return_non_pair(self):
+        """should raise Error if map function return a serise contain non-pair"""
+        state.add_fun(
+            self.server,
+            'def mapfun(doc):\n'
+            '  return [(2, 4), [42]]'
+        )
+        doc = {'_id': 'foo'}
+        try:
+            views.map_doc(self.server, doc)
+        except exceptions.Error as err:
+            self.assertTrue('invalid value' in err.args[0])
+            self.assertTrue('[42]' in err.args[0])
+
+    def test_return_str_type(self):
+        """should raise Error if map function return a serise contain string"""
+        state.add_fun(
+            self.server,
+            'def mapfun(doc):\n'
+            '  return [(2, 4), "42"]'
+        )
+        doc = {'_id': 'foo'}
+        try:
+            views.map_doc(self.server, doc)
+        except exceptions.Error as err:
+            self.assertTrue('not a string' in err.args[0])
+
 
 class ReduceTestCase(unittest.TestCase):
 
