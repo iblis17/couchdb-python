@@ -115,7 +115,7 @@ class MapTestCase(unittest.TestCase):
             '  pass'
         )
         doc = {'_id': 'foo'}
-        views.map_doc(self.server, doc)
+        self.assertEqual(views.map_doc(self.server, doc), [[]])
 
     def test_yield_non_iterable(self):
         """should raise Error if map function do not yield iterable"""
