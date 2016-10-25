@@ -55,9 +55,11 @@ class MapTestCase(unittest.TestCase):
         try:
             views.map_doc(self.server, {'_id': 'foo'})
         except Exception as err:
-            self.assertTrue(err, exceptions.FatalError)
+            self.assertTrue(isinstance(err, exceptions.FatalError))
             self.assertEqual(err.args[0], 'test')
             self.assertEqual(err.args[1], 'let it crush!')
+        else:
+            self.fail('FatalError exception expected')
 
     def test_raise_error_exception_on_any_python_one(self):
         """should raise QS Error exception on any Python one"""
@@ -69,8 +71,10 @@ class MapTestCase(unittest.TestCase):
         try:
             views.map_doc(self.server, {'_id': 'foo'})
         except Exception as err:
-            self.assertTrue(err, exceptions.Error)
+            self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], ZeroDivisionError.__name__)
+        else:
+            self.fail('Error exception expected')
 
     def test_map_function_shouldnt_change_document(self):
         """should prevent document changing within map function"""
@@ -131,6 +135,8 @@ class MapTestCase(unittest.TestCase):
         except exceptions.Error as err:
             self.assertTrue('invalid value' in err.args[0])
             self.assertTrue('`42`' in err.args[0])
+        else:
+            self.fail('Error exception expected')
 
     def test_yield_non_pair(self):
         """should raise Error if map function do not yield pair"""
@@ -146,6 +152,8 @@ class MapTestCase(unittest.TestCase):
         except exceptions.Error as err:
             self.assertTrue('invalid value' in err.args[0])
             self.assertTrue('`[42]`' in err.args[0])
+        else:
+            self.fail('Error exception expected')
 
     def test_yield_str_type(self):
         """should raise Error if map function yield a string"""
@@ -160,6 +168,8 @@ class MapTestCase(unittest.TestCase):
             views.map_doc(self.server, doc)
         except exceptions.Error as err:
             self.assertTrue('not a string' in err.args[0])
+        else:
+            self.fail('Error exception expected')
 
     def test_return_non_iterable(self):
         """should raise Error
@@ -175,6 +185,8 @@ class MapTestCase(unittest.TestCase):
         except exceptions.Error as err:
             self.assertTrue('invalid value' in err.args[0])
             self.assertTrue('`42`' in err.args[0])
+        else:
+            self.fail('Error exception expected')
 
     def test_return_non_pair(self):
         """should raise Error if map function return a serise contain non-pair"""
@@ -189,6 +201,8 @@ class MapTestCase(unittest.TestCase):
         except exceptions.Error as err:
             self.assertTrue('invalid value' in err.args[0])
             self.assertTrue('[42]' in err.args[0])
+        else:
+            self.fail('Error exception expected')
 
     def test_return_str_type(self):
         """should raise Error if map function return a serise contain string"""
@@ -202,6 +216,8 @@ class MapTestCase(unittest.TestCase):
             views.map_doc(self.server, doc)
         except exceptions.Error as err:
             self.assertTrue('not a string' in err.args[0])
+        else:
+            self.fail('Error exception expected')
 
 
 class ReduceTestCase(unittest.TestCase):
@@ -284,7 +300,7 @@ class ReduceTestCase(unittest.TestCase):
                 [['foo', 'bar'], ['bar', 'baz']]
             )
         except Exception as err:
-            self.assertTrue(err, exceptions.Error)
+            self.assertTrue(isinstance(err, exceptions.Error))
             self.assertEqual(err.args[0], NameError.__name__)
 
     def test_reduce_empty_map_result(self):
