@@ -78,26 +78,35 @@ def best_match(supported, header):
 # Build list of `MIME types
 # <http://www.iana.org/assignments/media-types/>`_ for HTTP responses.
 # Ported from `Ruby on Rails
-# <https://github.com/rails/rails/blob/v3.1.0/actionpack/lib/action_dispatch/http/mime_types.rb>`_
+# <https://github.com/rails/rails/blob/v5.0.0.1/actionpack/lib/action_dispatch/http/mime_types.rb>`_
 DEFAULT_TYPES = {
-    'all': ['*/*'],
-    'text': ['text/plain; charset=utf-8', 'txt'],
-    'html': ['text/html; charset=utf-8'],
-    'xhtml': ['application/xhtml+xml', 'xhtml'],
-    'xml': ['application/xml', 'text/xml', 'application/x-xml'],
-    'js': ['text/javascript', 'application/javascript',
-           'application/x-javascript'],
-    'css': ['text/css'],
-    'ics': ['text/calendar'],
-    'csv': ['text/csv'],
-    'rss': ['application/rss+xml'],
-    'atom': ['application/atom+xml'],
-    'yaml': ['application/x-yaml', 'text/yaml'],
+    # (type, alias, ...): [content_type, ...]
+    ('all',): ['*/*'],
+    ('text', 'txt'): ['text/plain; charset=utf-8'],
+    ('html',): ['text/html; charset=utf-8'],
+    ('xhtml',): ['application/xhtml+xml'],
+    ('js',): ['text/javascript',
+              'application/javascript',
+              'application/x-javascript'],
+    ('css',): ['text/css'],
+    ('ics',): ['text/calendar'],
+    ('csv',): ['text/csv'],
+    ('vcf',): ['text/vcard'],
+
+    ('xml',): ['application/xml', 'text/xml', 'application/x-xml'],
+    ('rss',): ['application/rss+xml'],
+    ('atom',): ['application/atom+xml'],
+    ('yaml', 'yml'): ['application/x-yaml', 'text/yaml'],
     # just like Rails
-    'multipart_form': ['multipart/form-data'],
-    'url_encoded_form': ['application/x-www-form-urlencoded'],
+    ('multipart_form',): ['multipart/form-data'],
+    ('url_encoded_form',): ['application/x-www-form-urlencoded'],
     # http://www.ietf.org/rfc/rfc4627.txt
-    'json': ['application/json', 'text/x-json']
+    # http://www.json.org/JSONRequest.html
+    ('json',): ['application/json', 'text/x-json', 'application/jsonrequest'],
+
+    ('pdf',): ['application/pdf'],
+    ('zip',): ['application/zip'],
+    ('gzip', 'gz'): ['application/gzip'],
     # TODO: https://issues.apache.org/jira/browse/COUCHDB-1261
     # 'kml', 'application/vnd.google-earth.kml+xml',
     # 'kmz', 'application/vnd.google-earth.kmz'
@@ -113,8 +122,9 @@ class MimeProvider(object):
         self.funcs_by_key = OrderedDict()
         self._resp_content_type = None
 
-        for k, v in DEFAULT_TYPES.items():
-            self.register_type(k, *v)
+        for types, v in DEFAULT_TYPES.items():
+            for type_ in types:
+                self.register_type(type_, *v)
 
     def is_provides_used(self):
         """Checks if any provides function is registered."""
@@ -135,21 +145,33 @@ class MimeProvider(object):
 
         Predefined types:
             - all: ``*/*``
-            - text: ``text/plain; charset=utf-8``, ``txt``
+            - text: ``text/plain; charset=utf-8``
+            - txt: alias of ``text``
             - html: ``text/html; charset=utf-8``
-            - xhtml: ``application/xhtml+xml``, ``xhtml``
-            - xml: ``application/xml``, ``text/xml``, ``application/x-xml``
+            - xhtml: ``application/xhtml+xml``
             - js: ``text/javascript``, ``application/javascript``,
               ``application/x-javascript``
             - css: ``text/css``
             - ics: ``text/calendar``
             - csv: ``text/csv``
+            - vcf: ``text/vcard``,
+
+            - xml: ``application/xml``, ``text/xml``, ``application/x-xml``
             - rss: ``application/rss+xml``
             - atom: ``application/atom+xml``
             - yaml: ``application/x-yaml``, ``text/yaml``
+            - yml: alias of ``yaml``
+
             - multipart_form: ``multipart/form-data``
             - url_encoded_form: ``application/x-www-form-urlencoded``
-            - json: ``application/json``, ``text/x-json``
+
+            - json: ``application/json``, ``text/x-json``,
+              ``application/jsonrequest``
+
+            - pdf: ``application/pdf``
+            - zip: ``application/zip``
+            - gzip: ``application/gzip``
+            - gz: alias of ``gzip``
 
         Example:
             >>> register_type('png', 'image/png')
